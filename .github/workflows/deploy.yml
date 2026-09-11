@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets you redeploy from the Actions tab without pushing anything.
+  workflow_dispatch:
+
+# One deployment at a time. A push that lands mid-run waits rather than racing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # The invariants and the design freeze gate the deploy: a broken number or
+      # a moved element never reaches the published site.
+      - run: npm test
+
+      - name: Build
+        env:
+          # A project site is served from /<repo>/, so the asset URLs need that
+          # prefix. Reading it from the repo name means renaming the repo does
+          # not break the build.
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: npm run build
+
+      - name: Add the single-page fallback
+        # GitHub Pages serves static files, so a deep link like /audit is a 404
+        # until the router has loaded. Pages serves 404.html for anything it
+        # cannot find; making that the app lets the route resolve client-side.
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,167 @@
+/* ---------------------------------------------------------------------------
+   Tokens. The screen is monochrome in both themes: one ground, one raised
+   surface, four greys of text, three flat greys of fill. Nothing else. Any
+   legacy colour name below resolves to one of these, so no hue can leak back
+   in from an older rule.
+
+   Dark is the default, and it follows Claude's: a warm near-black canvas
+   rather than a blue-grey one, a card surface one step up from it, a sidebar
+   one step down, warm off-white text, and hairlines quiet enough to separate
+   without drawing the eye.
+
+   Put data-theme="light" on <html> for the light palette.
+   --------------------------------------------------------------------------- */
+
+:root {
+  color-scheme: dark;
+
+  --bg: #1a1a18; /* canvas */
+  --surface: #2a2a27; /* cards, dialogs, inputs: a clear step up from the canvas */
+  --sidebar-bg: #141412;
+
+  --ink: #faf9f5; /* primary text, 16.5:1 on the canvas */
+  --text-2: #c9c7bc; /* secondary, 10.3:1 */
+  --text-3: #a3a099; /* tertiary, 6.7:1 */
+  --placeholder: #9d9b95; /* quaternary, 6.3:1 on canvas, 5.2:1 on a card */
+
+  --chip: #3a3935; /* primary chip fill, a step up again so chips read on a card */
+  --chip-soft: #302f2c; /* secondary chip fill */
+  --chip-hover: #474641;
+  /* Rectangles sitting inside a card are recessed, not raised again. */
+  --inset: #141412;
+  --inset-soft: #1f1f1d;
+  --track: #2e2d2a; /* progress track */
+  --fill: #8b8981; /* progress fill */
+  --limit-over: #e79a7a;
+  --limit-over-bg: rgba(231, 154, 122, 0.12);
+  --chart-1: #e7e5dc;
+  --chart-2: #b8b5aa;
+  --chart-3: #8d8a82;
+  --chart-4: #66645f;
+  --chart-5: #474642;
+
+  --line-strong: rgba(255, 255, 255, 0.22); /* card and input outlines */
+  --line: rgba(255, 255, 255, 0.1); /* section rules and hairlines */
+
+  --glass: rgba(48, 48, 45, 0.88); /* the chat: its own shade, lighter than a card */
+  --ink-50: rgba(255, 255, 255, 0.3); /* sidebar-toggle outline */
+  --scrim: rgba(0, 0, 0, 0.72); /* dialog backdrop */
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #fcfcfb;
+  --surface: #fcfcfb;
+  --sidebar-bg: #fcfcfb;
+
+  --ink: #000000;
+  --text-2: #4e4e4e;
+  --text-3: rgba(94, 94, 94, 0.93);
+  /* Raised from the wireframe #9e9e9e, which is 2.6:1 on the page and fails AA. */
+  --placeholder: #6e6e6e;
+
+  --chip: #dddddd;
+  --chip-soft: #ededed;
+  --chip-hover: #d9d9d9;
+  --inset: #dddddd;
+  --inset-soft: #ededed;
+  --track: #d9d9d9;
+  --fill: #898989;
+  --limit-over: #8c351f;
+  --limit-over-bg: rgba(140, 53, 31, 0.09);
+  --chart-1: #1a1a1a;
+  --chart-2: #4c4c4c;
+  --chart-3: #767676;
+  --chart-4: #a0a0a0;
+  --chart-5: #c1c1c1;
+
+  --line-strong: rgba(0, 0, 0, 0.26);
+  --line: rgba(0, 0, 0, 0.13);
+
+  --glass: rgba(252, 252, 251, 0.82);
+  --ink-50: rgba(0, 0, 0, 0.32);
+  --scrim: rgba(0, 0, 0, 0.35);
+}
+
+:root {
+  /* Legacy names, all folded into the monochrome set. */
+  --page: var(--bg);
+  --surface-2: var(--chip-soft);
+  --text: var(--ink);
+  --border: var(--line);
+  --border-2: var(--line-strong);
+  --red: var(--text-2);
+  --red-bg: var(--chip);
+  --amber: var(--text-2);
+  --amber-bar: var(--fill);
+  --amber-bg: var(--chip);
+  --blue: var(--text-2);
+  --blue-bg: var(--chip-soft);
+  --green: var(--text-2);
+  --green-bg: var(--chip);
+
+  /* Shell */
+  --sidebar-w: 240px;
+  --sidebar-rail: 84px;
+  --topbar-h: 57px;
+  --pad: 32px;
+  --gutter: 16px;
+
+  /* 12-column grid: 11 gutters of 16 removed, the rest split twelve ways. */
+  --col: calc((100% - 176px) / 12);
+  --pitch: calc(var(--col) + var(--gutter));
+  /* Columns 1-4 of the split, measured to the divider. */
+  --split-left: calc(4 * var(--col) + 3 * var(--gutter));
+
+  /* Vertical rhythm */
+  --gap-rule-kpi: 72px; /* the top-bar rule to the first numbers */
+  --gap-kpi-agents: 72px;
+  --gap-agents-split: 64px;
+  --footer-h: 0px;
+  --chat-lift: 0px; /* the chat sits on the bottom margin line */
+
+  /* Shape */
+  --radius: 10px;
+  --radius-sm: 8px;
+  --radius-chip: 8px;
+  --radius-bar: 5px;
+  /* The audit search is the one control shaped as a pill: it is the field you
+     are meant to reach for on that page, so it reads as a search box on sight. */
+  --radius-pill: 999px;
+
+  /* Type. 14px is the floor for the whole interface, and the scale above it
+     carries priority: how much a thing matters decides how big it is.
+
+       28  the fund's state            KPI values
+       24  where you are               section headings, page titles
+       20  what needs you              the decision itself
+       18  named subjects              agent names, block labels, consequence numbers
+       16  urgency and emphasis        warnings, deadlines, counts, section titles, nav
+       14  body and metadata           everything else
+
+     Weight and grey level separate tiers inside each size. */
+  --fs-body: 14px;
+  --fs-em: 16px;
+  --fs-title: 18px;
+  --fs-ask: 20px;
+  --fs-head: 24px;
+  --fs-hero: 28px;
+
+  /* Legacy step names, all body size. */
+  --fs-8: var(--fs-body);
+  --fs-10: var(--fs-body);
+  --fs-11: var(--fs-body);
+  --fs-12: var(--fs-body);
+  --fs-13: var(--fs-body);
+  --fs-14: var(--fs-body);
+  --fs-15: var(--fs-body);
+  --fs-16: var(--fs-em);
+  --fs-18: var(--fs-title);
+  --fs-20: var(--fs-ask);
+  --fs-24: var(--fs-head);
+  --fs-28: var(--fs-hero);
+  --fs-nav: var(--fs-em);
+
+  --nav-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
