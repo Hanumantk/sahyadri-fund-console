@@ -69,58 +69,26 @@ div.home
   div.agent-row
     button.agent-card.is-pau-ed
       span.name
-      span.meta
-        span
-        span.dot2
-        span
-        span.dot2
-        span
       span.live
         span.st
     button.agent-card.is-waiting
       span.name
-      span.meta
-        span
-        span.dot2
-        span
-        span.dot2
-        span
       span.live
         span.st
     button.agent-card.is-pau-ed
       span.name
-      span.meta
-        span
-        span.dot2
-        span
-        span.dot2
-        span
       span.live
         span.st
     button.agent-card.is-running
       span.name
-      span.meta
-        span
-        span.dot2
-        span
       span.live
         span.st
     button.agent-card.is-throttled
       span.name
-      span.meta
-        span
-        span.dot2
-        span
-        span.dot2
-        span
       span.live
         span.st
     button.agent-card.is-need-.you
       span.name
-      span.meta
-        span
-        span.dot2
-        span
       span.live
         span.st
   div.lower
@@ -200,96 +168,38 @@ div.home
           span.badge.is-running
         span.spacer
       div.panel-body
-        div.panel-desc
-        div.panel-cols
-          div.section
-            div.section-title
-              span
-            div.list
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r
-                  span.is-late
-                  br
-                  span.sub
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r
-                  br
-                  span.sub
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r
-                  br
-                  span.sub
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r
-                  br
-                  span.sub
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r
-                  br
-                  span.sub
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r
-                  br
-                  span.sub
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r
-                  br
-                  span.sub
-          div.section
-            div.section-title
-              span
-            div.list
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r.is-paused
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r.is-waiting
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r.is-paused
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r.is-running
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r.is-throttled
-              div.list-row
-                span.l
-                  br
-                  span.sub
-                span.r.is-needs-you
+        div.section
+          div.section-title
+            span
+          div.list.feeds
+            div.list-row
+              span.l
+              span.r
+                span.is-late
+            div.list-row
+              span.l
+              span.r
+                span.sub
+            div.list-row
+              span.l
+              span.r
+                span.sub
+            div.list-row
+              span.l
+              span.r
+                span.sub
+            div.list-row
+              span.l
+              span.r
+                span.sub
+            div.list-row
+              span.l
+              span.r
+                span.sub
+            div.list-row
+              span.l
+              span.r
+                span.sub
         div.section
           div.section-title
             span

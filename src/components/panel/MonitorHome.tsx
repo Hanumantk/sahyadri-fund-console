@@ -4,58 +4,29 @@ import { useStore } from '../../state/store';
 import { RecordLink, Section } from '../ui/bits';
 
 export function MonitorHome() {
-  const { vm, select } = useStore();
+  const { vm } = useStore();
   return (
     <>
-      {/* What the agent watches is the two headings below, so saying it here as
-          well cost two lines at the top of the panel. What is left is the part
-          that cannot be seen anywhere else: when it last ran, and what catches
-          it if it stops. */}
-      <div className="panel-desc">
-        Last check {fmtTimeSec(vm.health.checkedMs)} · checks every 30 seconds · a plain heartbeat outside the agent raises "Monitor not responding" if a check is missed.
-      </div>
-      <div className="panel-cols">
-        <Section title={`Feeds · ${vm.health.live} of ${vm.health.total} live`}>
-          <div className="list">
-            {vm.feeds.map((f) => (
-              <div className="list-row" key={f.id}>
-                <span className="l">
-                  {f.name}
-                  <br />
-                  <span className="sub">{f.vendor}</span>
-                </span>
-                {/* A live feed says so by its timestamp. Only a late one needs
-                    the word, and then it should be the thing you see. */}
-                <span className="r">
-                  {f.late ? <span className="is-late">{Math.floor(f.ageSec / 60)} min late</span> : null}
-                  <br />
-                  <span className="sub">
-                    updated {fmtTime(f.lastUpdatedMs)} · {fmtAge(f.lastUpdatedMs, vm.nowMs)} ago
-                  </span>
-                </span>
-              </div>
-            ))}
-          </div>
-        </Section>
-        <Section title="Agents it watches">
-          <div className="list">
-            {vm.agentRow.map((a) => (
-              <div className="list-row" key={a.id} style={{ cursor: 'pointer' }} onClick={() => select({ kind: 'agent', id: a.id })}>
-                <span className="l">
-                  {a.name}
-                  <br />
-                  <span className="sub">{a.lastActionMs ? `last action ${fmtTime(a.lastActionMs)} · ${fmtAge(a.lastActionMs, vm.nowMs)} ago` : 'no action yet today'}</span>
-                </span>
-                {/* Running is the ordinary case and the left column already
-                    shows it acted a minute ago. Silence here means fine. */}
-                <span className={`r is-${a.status.toLowerCase().replace(/\s+/g, '-')}`}>
-                  {a.status === 'Running' ? '' : a.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      </div>
+      {/* One line per feed. The vendor is provenance for the audit trail and
+          the agent's own panel, not something a glance at Home decides with. A
+          live feed says so by its age; only a late one gets the word, in amber.
+
+          There is no "Agents it watches" list any more. It showed the same six
+          agents as the row directly above it, with the same status. The one
+          thing it added — each agent's last action time — is in the top bar
+          for the most recent and on every agent's panel for the rest. */}
+      <Section title={`Feeds · ${vm.health.live} of ${vm.health.total} live · checked ${fmtTimeSec(vm.health.checkedMs)}`}>
+        <div className="list feeds">
+          {vm.feeds.map((f) => (
+            <div className="list-row" key={f.id}>
+              <span className="l">{f.name}</span>
+              <span className="r">
+                {f.late ? <span className="is-late">{Math.floor(f.ageSec / 60)} min late</span> : <span className="sub">{fmtAge(f.lastUpdatedMs, vm.nowMs)} ago</span>}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Section>
       <Section title={`Flagged since ${fmtTime(MARKET_OPEN_MS)}`}>
         {vm.monitorFlags.length === 0 ? (
           <div className="list">

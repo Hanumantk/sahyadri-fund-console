@@ -719,7 +719,7 @@ a,
 }
 .agent-card {
   grid-column: span 2;
-  min-height: 104px;
+  min-height: 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -752,15 +752,16 @@ a,
   max-width: 100%;
 }
 .agent-card .live {
-  margin-top: auto;
-  padding-top: 8px;
+  margin-top: 6px;
   max-width: 100%;
   font-size: var(--fs-12);
   font-weight: 500;
   color: var(--text-2);
-  white-space: nowrap;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ---------- The split: decisions and the Monitoring Agent ---------- */
@@ -4496,7 +4497,6 @@ input.inline-input:focus,
 }
 .warn-chip.is-alert {
   color: var(--alert);
-  background: var(--alert-soft);
 }
 
 /* How long you have. Neutral while there is time, amber inside the last five
@@ -4575,4 +4575,12 @@ input.inline-input:focus,
 .dcard.selected,
 .agent-card.selected {
   box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* The feeds list on Home: one line per feed, name against age. */
+.list.feeds .list-row {
+  align-items: baseline;
+}
+.list.feeds .l {
+  color: var(--text-2);
 }
