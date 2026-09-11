@@ -71,6 +71,7 @@
   --warn: #dfb050; /* near a limit, a late feed, an agent not running */
   --alert: #e79a7a; /* past a limit, or waiting on you */
   --alert-soft: rgba(231, 154, 122, 0.13);
+  --warn-soft: rgba(223, 176, 80, 0.13);
 
   --divider: rgba(255, 255, 255, 0.14); /* between the four fields */
 }
@@ -121,6 +122,7 @@
   --warn: #8a5300;
   --alert: #8c351f;
   --alert-soft: rgba(140, 53, 31, 0.08);
+  --warn-soft: rgba(138, 83, 0, 0.09);
 
   --divider: rgba(0, 0, 0, 0.15);
 }

@@ -1,8 +1,25 @@
 import { useEffect, useRef } from 'react';
-import type { QueueItem } from '../../data/derive';
+import type { Flag, QueueItem } from '../../data/derive';
 import { fmtLeft, fmtTime } from '../../data/format';
 import { useStore } from '../../state/store';
-import { Icon } from '../ui/Icon';
+import { Icon, type IconName } from '../ui/Icon';
+
+/**
+ * How loudly a flag reads, and what glyph carries it. The kind is already in
+ * the data, so this only chooses how to show it — never what it means.
+ *
+ * A disagreement is not a fault: the sources conflict and no agent will settle
+ * it, which is the whole reason the item is here. It gets its own glyph and
+ * stays in body colour rather than borrowing the language of a breach.
+ */
+const FLAG_LOOK: Record<Flag['kind'], { tone: '' | ' is-warn' | ' is-alert'; icon: IconName }> = {
+  disagree: { tone: '', icon: 'split' },
+  waiting: { tone: ' is-warn', icon: 'wait' },
+  late: { tone: ' is-warn', icon: 'clock' },
+  near: { tone: ' is-warn', icon: 'warning' },
+  objection: { tone: ' is-alert', icon: 'alert' },
+  broken: { tone: ' is-alert', icon: 'alert' },
+};
 
 function actionLabel(i: QueueItem): string {
   switch (i.kind) {
@@ -29,8 +46,10 @@ export function Timer({ item }: { item: QueueItem }) {
     );
   }
   const left = item.msLeft ?? 0;
+  // Time is the one thing on this card that runs out while you look at it.
+  const tone = left <= 0 ? ' is-alert' : item.urgent ? ' is-urgent' : '';
   return (
-    <span className="timer" title={`Expires ${fmtTime(item.deadlineMs!)}, then nothing is bought`}>
+    <span className={`timer${tone}`} title={`Expires ${fmtTime(item.deadlineMs!)}, then nothing is bought`}>
       {fmtLeft(left)}
     </span>
   );
@@ -86,12 +105,15 @@ export function DecisionsColumn({ cursor, setCursor }: { cursor: number; setCurs
               <span className="ask">{item.ask}</span>
               {item.flags.length > 0 && (
                 <span className="flags">
-                  {item.flags.map((f, i) => (
-                    <span className="warn-chip" key={i}>
-                      <Icon name="warning" />
-                      {f.text}
-                    </span>
-                  ))}
+                  {item.flags.map((f, i) => {
+                    const look = FLAG_LOOK[f.kind];
+                    return (
+                      <span className={`warn-chip${look.tone}`} key={i}>
+                        <Icon name={look.icon} />
+                        {f.text}
+                      </span>
+                    );
+                  })}
                 </span>
               )}
               <span className="actions">
@@ -115,7 +137,7 @@ export function DecisionsColumn({ cursor, setCursor }: { cursor: number; setCurs
               onClick={() => (c.kind === 'decision' ? select({ kind: 'decision', id: c.id }) : undefined)}
               style={c.kind === 'blocked' ? { cursor: 'default' } : undefined}
             >
-              <span className="t">
+              <span className={`t${/^Expired|^Let lapse/.test(c.label) ? ' is-warn' : ''}`}>
                 <strong>{c.label}</strong>
                 <br />
                 {c.title}

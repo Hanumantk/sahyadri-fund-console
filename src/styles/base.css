@@ -522,11 +522,12 @@ a,
   text-align: left;
 }
 .warn-chip svg {
-  width: 12px;
-  height: 10px;
+  /* Beside 16px text, per the icon scale. Each glyph keeps its own viewBox
+     proportions inside the square box rather than being stretched to it. */
+  width: 15px;
+  height: 15px;
   flex: none;
-  margin-top: 4px;
-  stroke-width: 2;
+  margin-top: 2px;
 }
 
 /* Badges carry no fill: status reads as plain text. */
@@ -4421,14 +4422,16 @@ input.inline-input:focus,
 /* Money ------------------------------------------------------------------- */
 
 /* Up and down follow the Indian market convention. The figure always carries
-   its own + or −, so the colour is a second reading of a fact already stated. */
-.v-up { color: var(--up); }
-.v-down { color: var(--down); }
+   its own + or −, so the colour is a second reading of a fact already stated.
+   The class is doubled so these win against `.row .v`, which is two classes
+   deep and would otherwise hold every detail value at the secondary grey. */
+.v-up.v-up { color: var(--up); }
+.v-down.v-down { color: var(--down); }
 
 /* How close something is to a limit ---------------------------------------- */
 
-.v-near { color: var(--warn); }
-.v-over { color: var(--alert); }
+.v-near.v-near { color: var(--warn); }
+.v-over.v-over { color: var(--alert); }
 
 /* An agent that is not running, and why -------------------------------------
    Running is the ordinary case and stays neutral: colouring it would spend a
@@ -4444,9 +4447,11 @@ input.inline-input:focus,
   font-weight: 600;
 }
 
-/* A feed that has stopped updating, and a number built on one. */
-.list-row .r .is-late,
-.headline.stale {
+/* A feed that has stopped updating. The numbers built on one stay in their
+   muted grey and keep the "09:53 · 12 min old" stamp beside them: when the
+   price feed stalls, three of the four headlines are stale at once, and
+   painting them all amber would drown the signal that a limit is breaking. */
+.list-row .r .is-late {
   color: var(--warn);
 }
 
@@ -4462,3 +4467,38 @@ input.inline-input:focus,
 .agent-card.is-paused .live .st,
 .agent-card.is-idle .live .st { color: var(--warn); }
 .agent-card.is-needs-you .live .st { color: var(--alert); }
+
+/* ---------------------------------------------------------------------------
+   Decisions.
+
+   A card in the queue says three things: what is being asked, what you should
+   know before answering, and how long you have. Only the last two vary, so
+   they are the only ones that carry colour.
+   --------------------------------------------------------------------------- */
+
+/* What you should know, at the weight it deserves. A disagreement keeps body
+   colour and its own glyph: the sources conflict, which is the reason the item
+   reached you, not a fault to be flagged in amber. */
+.warn-chip.is-warn {
+  color: var(--warn);
+}
+.warn-chip.is-alert {
+  color: var(--alert);
+  background: var(--alert-soft);
+}
+
+/* How long you have. Neutral while there is time, amber inside the last five
+   minutes, and rust once it has run out. */
+.timer.is-urgent {
+  color: var(--warn);
+  background: var(--warn-soft);
+}
+.timer.is-alert {
+  color: var(--alert);
+  background: var(--alert-soft);
+}
+
+/* A decision that ran out reads differently from one you settled. */
+.closed-item .t.is-warn strong {
+  color: var(--warn);
+}

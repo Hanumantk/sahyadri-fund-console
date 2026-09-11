@@ -143,10 +143,10 @@ div.home
             span.warn-chip
               svg
                 path
-            span.warn-chip
+            span.warn-chip.is-warn
               svg
                 path
-            span.warn-chip
+            span.warn-chip.is-warn
               svg
                 path
           span.actions
@@ -155,7 +155,7 @@ div.home
         button.dcard
           span.ask
           span.flags
-            span.warn-chip
+            span.warn-chip.is-alert
               svg
                 path
           span.actions

@@ -146,19 +146,10 @@ div.home
             span.warn-chip
               svg
                 path
-            span.warn-chip
+            span.warn-chip.is-warn
               svg
                 path
-            span.warn-chip
-              svg
-                path
-          span.actions
-            span.chip-btn
-            span.timer
-        button.dcard
-          span.ask
-          span.flags
-            span.warn-chip
+            span.warn-chip.is-warn
               svg
                 path
           span.actions
@@ -167,7 +158,7 @@ div.home
         button.dcard
           span.ask
           span.flags
-            span.warn-chip
+            span.warn-chip.is-alert
               svg
                 path
           span.actions
@@ -176,7 +167,16 @@ div.home
         button.dcard
           span.ask
           span.flags
-            span.warn-chip
+            span.warn-chip.is-warn
+              svg
+                path
+          span.actions
+            span.chip-btn
+            span.timer
+        button.dcard
+          span.ask
+          span.flags
+            span.warn-chip.is-alert
               svg
                 path
           span.actions
