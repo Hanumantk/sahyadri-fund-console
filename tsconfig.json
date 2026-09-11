@@ -20,7 +20,8 @@
     "noEmit": true,
     "types": [
       "vitest/globals",
-      "vite/client"
+      "vite/client",
+      "node"
     ]
   },
   "include": [
