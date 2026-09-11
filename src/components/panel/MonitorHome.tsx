@@ -24,8 +24,10 @@ export function MonitorHome() {
                   <br />
                   <span className="sub">{f.vendor}</span>
                 </span>
+                {/* A live feed says so by its timestamp. Only a late one needs
+                    the word, and then it should be the thing you see. */}
                 <span className="r">
-                  {f.late ? `${Math.floor(f.ageSec / 60)} min late` : 'live'}
+                  {f.late ? <span className="is-late">{Math.floor(f.ageSec / 60)} min late</span> : null}
                   <br />
                   <span className="sub">
                     updated {fmtTime(f.lastUpdatedMs)} · {fmtAge(f.lastUpdatedMs, vm.nowMs)} ago
@@ -44,7 +46,11 @@ export function MonitorHome() {
                   <br />
                   <span className="sub">{a.lastActionMs ? `last action ${fmtTime(a.lastActionMs)} · ${fmtAge(a.lastActionMs, vm.nowMs)} ago` : 'no action yet today'}</span>
                 </span>
-                <span className="r">{a.status}</span>
+                {/* Running is the ordinary case and the left column already
+                    shows it acted a minute ago. Silence here means fine. */}
+                <span className={`r is-${a.status.toLowerCase().replace(/\s+/g, '-')}`}>
+                  {a.status === 'Running' ? '' : a.status}
+                </span>
               </div>
             ))}
           </div>

@@ -95,8 +95,8 @@ export function Layer1Strip() {
             {vm.limits.broken.length
               ? "Agents can't add to a broken limit · nothing is forced to sell"
               : vm.limits.near.length
-                ? `${PORTFOLIO_SUMMARY.exceptionCount} on exception · set on Rules`
-                : `Nothing above ${LIMITS.nearLimitPct}% of its limit · set on Rules`}
+                ? `${PORTFOLIO_SUMMARY.exceptionCount} on exception`
+                : `Nothing above ${LIMITS.nearLimitPct}% of its limit`}
           </div>
         </div>
         <div className="block-rule" />
@@ -122,7 +122,7 @@ export function Layer1Strip() {
           <div className="block-sub">
             {fmtPct(f.cashPct)} of fund · uninvested{' '}
             {f.cashIdleDays >= 1
-              ? `${f.cashIdleDays} ${f.cashIdleDays === 1 ? 'day' : 'days'} · since ${fmtDayMonth(f.cashIdleSinceMs)}`
+              ? `${f.cashIdleDays} ${f.cashIdleDays === 1 ? 'day' : 'days'}`
               : `since ${fmtTimeSec(f.cashIdleSinceMs).slice(0, 5)} today`}
           </div>
         </div>

@@ -4515,3 +4515,16 @@ input.inline-input:focus,
 .closed-item .t.is-warn strong {
   color: var(--warn);
 }
+
+/* The agents-it-watches column. Running says nothing, so the words that remain
+   are all exceptions and each takes the tone its card already carries. */
+.list-row .r.is-waiting,
+.list-row .r.is-throttled,
+.list-row .r.is-paused,
+.list-row .r.is-idle {
+  color: var(--warn);
+}
+.list-row .r.is-needs-you {
+  color: var(--alert);
+  font-weight: 600;
+}

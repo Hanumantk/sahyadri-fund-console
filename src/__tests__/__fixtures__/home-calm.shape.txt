@@ -92,8 +92,6 @@ div.home
         span
         span.dot2
         span
-        span.dot2
-        span
       span.live
         span.st
     button.agent-card.is-running
@@ -207,32 +205,32 @@ div.home
                 span.l
                   br
                   span.sub
-                span.r
+                span.r.is-running
               div.list-row
                 span.l
                   br
                   span.sub
-                span.r
+                span.r.is-running
               div.list-row
                 span.l
                   br
                   span.sub
-                span.r
+                span.r.is-running
               div.list-row
                 span.l
                   br
                   span.sub
-                span.r
+                span.r.is-running
               div.list-row
                 span.l
                   br
                   span.sub
-                span.r
+                span.r.is-running
               div.list-row
                 span.l
                   br
                   span.sub
-                span.r
+                span.r.is-running
         div.section
           div.section-title
             span

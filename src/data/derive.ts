@@ -882,7 +882,8 @@ export function countsLine(id: AgentId, c: AgentCounts): string {
     case 'portfolio':
       return `${c.sized} sized · ${c.cutDown} cut down · ${c.trims} ${plural(c.trims, 'trim')}`;
     case 'risk':
-      return `${c.riskChecked} checked · ${c.riskCleared} cleared · ${c.riskSent} sent to you · ${c.riskBlocked} blocked`;
+      // No "checked" total here: it is exactly the three that follow it added up.
+      return `${c.riskCleared} cleared · ${c.riskSent} sent to you · ${c.riskBlocked} blocked`;
     case 'compliance':
       return `${c.complianceChecked} checked · ${c.complianceBlocked} blocked`;
     case 'execution':
