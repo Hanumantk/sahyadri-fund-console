@@ -1,5 +1,6 @@
 // Every text element, in every view: at least 14px, at least 4.5:1 against its background.
 import { chromium } from 'playwright';
+import { openPage } from './past-setup.mjs';
 
 const MIN_PX = 14;
 const MIN_CONTRAST = 4.5;
@@ -34,39 +35,44 @@ const VIEWS = [
 ];
 
 const collect = () => {
+  /**
+   * What a piece of text actually sits on. A tinted background is only partly
+   * opaque, so what is beneath still shows through and has to be composited in.
+   * Taking the first painted ancestor on its own reports an accent tint as if
+   * it were the solid accent, which reads as 1:1 against accent-coloured text.
+   */
+  const bgUnder = (el) => {
+    const layers = [];
+    for (let e = el; e; e = e.parentElement) {
+      const m = getComputedStyle(e).backgroundColor.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/);
+      if (!m) continue;
+      const a = m[4] === undefined ? 1 : parseFloat(m[4]);
+      if (a === 0) continue;
+      layers.push({ r: +m[1], g: +m[2], b: +m[3], a });
+      if (a === 1) break;
+    }
+    let base = { r: 255, g: 255, b: 255 };
+    if (layers.length && layers[layers.length - 1].a === 1) base = layers.pop();
+    for (let k = layers.length - 1; k >= 0; k--) {
+      const l = layers[k];
+      base = { r: l.a * l.r + (1 - l.a) * base.r, g: l.a * l.g + (1 - l.a) * base.g, b: l.a * l.b + (1 - l.a) * base.b };
+    }
+    return `rgb(${Math.round(base.r)}, ${Math.round(base.g)}, ${Math.round(base.b)})`;
+  };
+
   const out = [];
   const walk = (el) => {
     if ([...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) {
       const s = getComputedStyle(el);
-      let e = el;
-      let bg = 'rgb(255, 255, 255)';
-      while (e) {
-        const c = getComputedStyle(e).backgroundColor;
-        if (c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c)) {
-          bg = c;
-          break;
-        }
-        e = e.parentElement;
-      }
-      out.push({ cls: String(el.className || el.tagName), size: parseFloat(s.fontSize), color: s.color, bg, text: el.textContent.trim().slice(0, 34) });
+      out.push({ cls: String(el.className || el.tagName), size: parseFloat(s.fontSize), color: s.color, bg: bgUnder(el), text: el.textContent.trim().slice(0, 34) });
     }
     for (const c of el.children) walk(c);
   };
   walk(document.body);
   for (const i of document.querySelectorAll('input')) {
     const s = getComputedStyle(i, '::placeholder');
-    // The input itself is transparent, so find the first painted ancestor.
-    let e = i;
-    let bg = 'rgb(255, 255, 255)';
-    while (e) {
-      const c = getComputedStyle(e).backgroundColor;
-      if (c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c)) {
-        bg = c;
-        break;
-      }
-      e = e.parentElement;
-    }
-    out.push({ cls: 'input::placeholder', size: parseFloat(s.fontSize), color: s.color, bg, text: i.placeholder.slice(0, 34) });
+    // The input itself is transparent, so resolve what shows through it.
+    out.push({ cls: 'input::placeholder', size: parseFloat(s.fontSize), color: s.color, bg: bgUnder(i), text: i.placeholder.slice(0, 34) });
   }
   return out;
 };
@@ -78,7 +84,7 @@ let total = 0;
 let min = Infinity;
 
 for (const [name, url, act] of VIEWS) {
-  const page = await browser.newPage({ viewport: { width: 1728, height: 1117 } });
+  const page = await openPage(browser, { viewport: { width: 1728, height: 1117 } });
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(400);
   if (act) {

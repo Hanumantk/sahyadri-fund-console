@@ -112,7 +112,7 @@ export function Shell({ children, devVisible }: { children: ReactNode; devVisibl
         </div>
         <nav className="nav">
           <NavItem to="/" end icon="home" label="Home">
-            <span className="nav-badge" title={vm.needsYou.label}>
+            <span className="nav-badge nav-count" title={vm.needsYou.label}>
               {needs}
             </span>
           </NavItem>

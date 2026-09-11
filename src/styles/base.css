@@ -597,14 +597,25 @@ a,
   column-gap: var(--gutter);
 }
 .block {
+  position: relative;
   grid-column: span 3;
   grid-row: 1 / span 3;
   display: grid;
   grid-template-rows: subgrid;
-  /* Narrower than its three-column cell, so the blocks read as four separate
-     fields rather than one banded strip. */
-  max-width: 318px;
   min-width: 0;
+}
+/* A hairline in the gutter turns the strip into four ledger columns. These
+   blocks used to be held narrower than their cells so they would not read as
+   one banded strip; the rule does that job properly, so they fill the grid
+   again and the rule sits centred in the gutter between them. */
+.block + .block::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--gutter) / -2);
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: var(--divider);
 }
 /* The head holds label, value and sub-lines. A minimum height keeps the three
    rules on one line across blocks, whatever the sub-lines say. */
@@ -4346,3 +4357,108 @@ body:has(.setup-page) {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ---------------------------------------------------------------------------
+   Colour.
+
+   Neutral carries the screen. Colour appears only where it changes what you
+   would do: the accent marks where you act, and the semantic set marks money
+   direction and how close something is to a limit. Every semantic colour sits
+   on text that already says the same thing in words or in a sign, so nothing
+   here is the only carrier of its meaning.
+   --------------------------------------------------------------------------- */
+
+/* Where a person acts ------------------------------------------------------ */
+
+.nav-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.nav-item.active svg {
+  color: var(--accent);
+}
+
+.record-link {
+  color: var(--accent);
+  text-decoration-color: var(--accent-line);
+}
+.record-link:hover {
+  color: var(--accent-strong);
+  text-decoration-color: currentColor;
+}
+
+.btn.primary {
+  border-color: transparent;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn.primary:hover {
+  background: var(--accent-strong);
+}
+.btn.primary svg {
+  color: currentColor;
+}
+
+.chat-input .send {
+  color: var(--accent);
+}
+
+/* One focus treatment everywhere, in the accent so it reads as "you are here". */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.queue-list:focus,
+.reason input:focus,
+.reason-inline input:focus,
+input.inline-input:focus,
+.audit-filter input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Money ------------------------------------------------------------------- */
+
+/* Up and down follow the Indian market convention. The figure always carries
+   its own + or −, so the colour is a second reading of a fact already stated. */
+.v-up { color: var(--up); }
+.v-down { color: var(--down); }
+
+/* How close something is to a limit ---------------------------------------- */
+
+.v-near { color: var(--warn); }
+.v-over { color: var(--alert); }
+
+/* An agent that is not running, and why -------------------------------------
+   Running is the ordinary case and stays neutral: colouring it would spend a
+   signal on the state you never need to act on. */
+.badge.is-waiting,
+.badge.is-throttled,
+.badge.is-paused,
+.badge.is-idle {
+  color: var(--warn);
+}
+.badge.is-needs-you {
+  color: var(--alert);
+  font-weight: 600;
+}
+
+/* A feed that has stopped updating, and a number built on one. */
+.list-row .r .is-late,
+.headline.stale {
+  color: var(--warn);
+}
+
+/* The count of things waiting on you, in the sidebar. */
+.nav-item .nav-count {
+  color: var(--alert);
+  font-weight: 600;
+}
+
+.agent-card .live .st { font-weight: 600; }
+.agent-card.is-waiting .live .st,
+.agent-card.is-throttled .live .st,
+.agent-card.is-paused .live .st,
+.agent-card.is-idle .live .st { color: var(--warn); }
+.agent-card.is-needs-you .live .st { color: var(--alert); }

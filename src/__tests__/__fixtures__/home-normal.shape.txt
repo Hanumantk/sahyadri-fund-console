@@ -5,16 +5,16 @@ div.home
         div.block-label
           span
         div.headline
-        div.block-sub
+        div.block-sub.v-up
         div.block-sub
       div.block-rule
       div.block-rows
         div.row
           span.k
-          span.v
+          span.v.v-up
         div.row
           span.k
-          span.v
+          span.v.v-up
     div.block
       div.block-head
         div.block-label
@@ -45,10 +45,10 @@ div.home
       div.block-rows
         div.row
           span.k
-          span.v
+          span.v.v-near
         div.row
           span.k
-          span.v
+          span.v.v-near
     div.block
       div.block-head
         div.block-label
@@ -64,7 +64,7 @@ div.home
           span.k
           span.v
   div.agent-row
-    button.agent-card
+    button.agent-card.is-running
       span.name
       span.meta
         span
@@ -73,7 +73,8 @@ div.home
         span.dot2
         span
       span.live
-    button.agent-card
+        span.st
+    button.agent-card.is-waiting
       span.name
       span.meta
         span
@@ -82,7 +83,8 @@ div.home
         span.dot2
         span
       span.live
-    button.agent-card
+        span.st
+    button.agent-card.is-running
       span.name
       span.meta
         span
@@ -93,14 +95,16 @@ div.home
         span.dot2
         span
       span.live
-    button.agent-card
+        span.st
+    button.agent-card.is-running
       span.name
       span.meta
         span
         span.dot2
         span
       span.live
-    button.agent-card
+        span.st
+    button.agent-card.is-running
       span.name
       span.meta
         span
@@ -109,13 +113,15 @@ div.home
         span.dot2
         span
       span.live
-    button.agent-card
+        span.st
+    button.agent-card.is-need-.you
       span.name
       span.meta
         span
         span.dot2
         span
       span.live
+        span.st
   div.lower
     div.queue
       div.queue-head
@@ -172,7 +178,7 @@ div.home
       div.panel-head
         h2
         span.meta
-          span.badge
+          span.badge.is-running
         span.spacer
       div.panel-body
         div.panel-desc

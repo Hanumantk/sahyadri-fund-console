@@ -16,6 +16,11 @@ export function Layer1Strip() {
   const stale = f.stale;
   const staleLabel = stale ? `${fmtTimeSec(f.measuredAtMs).slice(0, 5)} · ${fmtAge(f.measuredAtMs, vm.nowMs)} old` : null;
 
+  /** Up or down, to colour a figure that already states its own sign. */
+  const dir = (n: number) => (Math.abs(n) < 0.005 ? '' : n > 0 ? ' v-up' : ' v-down');
+  /** How close a limit is to being broken, in the same words the row uses. */
+  const limitTone = (status: string) => (status === 'broken' ? ' v-over' : status === 'near' ? ' v-near' : '');
+
   const gapAbs = Math.abs(f.gapPts).toFixed(2);
   const gapText =
     Math.abs(f.gapPts) < 0.005 ? 'Level with the market' : f.gapPts < 0 ? `${gapAbs} pts behind market` : `${gapAbs} pts ahead of market`;
@@ -30,7 +35,7 @@ export function Layer1Strip() {
             {staleLabel && <span className="asof">{staleLabel}</span>}
           </div>
           <div className={`headline${stale ? ' stale' : ''}`}>{fmtCr(f.fundValue)}</div>
-          <div className="block-sub">
+          <div className={`block-sub${dir(f.dayChange)}`}>
             {fmtSignedCr(f.dayChange)} today ({fmtSignedPct(f.dayChangePct)})
           </div>
           <div className="block-sub">
@@ -41,13 +46,13 @@ export function Layer1Strip() {
         <div className="block-rows">
           <div className="row">
             <span className="k">Fund</span>
-            <span className="v">
+            <span className={`v${dir(f.dayChangePct)}`}>
               {fmtSignedPct(f.dayChangePct)} · {gapText}
             </span>
           </div>
           <div className="row">
             <span className="k">Nifty 50</span>
-            <span className="v">{fmtSignedPct(f.benchmarkPct)}</span>
+            <span className={`v${dir(f.benchmarkPct)}`}>{fmtSignedPct(f.benchmarkPct)}</span>
           </div>
         </div>
       </div>
@@ -107,7 +112,7 @@ export function Layer1Strip() {
           {vm.limits.nearest.map((r) => (
             <div key={r.key} className="row">
               <span className="k">{r.name}</span>
-              <span className="v">
+              <span className={`v${limitTone(r.status)}`}>
                 {fmtPct(r.pct)} of {fmtPct(r.limitPct, 0)} · {r.headroom >= 0 ? `${fmtCr(r.headroom)} room` : `${fmtCr(-r.headroom)} over`}
               </span>
             </div>

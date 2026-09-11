@@ -1,8 +1,8 @@
 /* ---------------------------------------------------------------------------
-   Tokens. The screen is monochrome in both themes: one ground, one raised
-   surface, four greys of text, three flat greys of fill. Nothing else. Any
-   legacy colour name below resolves to one of these, so no hue can leak back
-   in from an older rule.
+   Tokens. The screen is a neutral ground — one canvas, one raised surface,
+   four greys of text, three flat greys of fill — carrying one accent and a
+   small set of semantic colours. Nothing is coloured that does not mean
+   something. See the Colour block below for what each hue is for.
 
    Dark is the default, and it follows Claude's: a warm near-black canvas
    rather than a blue-grey one, a card surface one step up from it, a sidebar
@@ -32,8 +32,8 @@
   --inset-soft: #1f1f1d;
   --track: #2e2d2a; /* progress track */
   --fill: #8b8981; /* progress fill */
-  --limit-over: #e79a7a;
-  --limit-over-bg: rgba(231, 154, 122, 0.12);
+  --limit-over: var(--alert);
+  --limit-over-bg: var(--alert-soft);
   --chart-1: #e7e5dc;
   --chart-2: #b8b5aa;
   --chart-3: #8d8a82;
@@ -46,6 +46,33 @@
   --glass: rgba(48, 48, 45, 0.88); /* the chat: its own shade, lighter than a card */
   --ink-50: rgba(255, 255, 255, 0.3); /* sidebar-toggle outline */
   --scrim: rgba(0, 0, 0, 0.72); /* dialog backdrop */
+
+  /* ---- Colour -------------------------------------------------------------
+     The screen stays ~95% neutral. Colour is spent on three things and
+     nothing else: one accent for where a person acts, semantic states, and
+     the data ramp.
+
+     The accent is ink blue, because the premise of this console is a written
+     record: every agent action is "written to the record", and the accent is
+     the pen. It is deliberately in neither the up nor the down family — on a
+     screen showing gains and losses, an accent that leans green or red starts
+     making claims about money it does not mean.
+
+     Money keeps the Indian market convention, green up and red down, and is
+     never colour alone: every figure carries its own + or − sign. */
+  --accent: #7ca9dd; /* 7.7:1 on the canvas */
+  --accent-strong: #9ac0e8; /* hover */
+  --accent-ink: #101620; /* text on an accent fill */
+  --accent-soft: rgba(124, 169, 221, 0.15);
+  --accent-line: rgba(124, 169, 221, 0.42);
+
+  --up: #74be8e; /* a gain, 8.5:1 */
+  --down: #e28b84; /* a loss, 7.4:1 */
+  --warn: #dfb050; /* near a limit, a late feed, an agent not running */
+  --alert: #e79a7a; /* past a limit, or waiting on you */
+  --alert-soft: rgba(231, 154, 122, 0.13);
+
+  --divider: rgba(255, 255, 255, 0.14); /* between the four fields */
 }
 
 :root[data-theme='light'] {
@@ -68,8 +95,8 @@
   --inset-soft: #ededed;
   --track: #d9d9d9;
   --fill: #898989;
-  --limit-over: #8c351f;
-  --limit-over-bg: rgba(140, 53, 31, 0.09);
+  --limit-over: var(--alert);
+  --limit-over-bg: var(--alert-soft);
   --chart-1: #1a1a1a;
   --chart-2: #4c4c4c;
   --chart-3: #767676;
@@ -82,10 +109,26 @@
   --glass: rgba(252, 252, 251, 0.82);
   --ink-50: rgba(0, 0, 0, 0.32);
   --scrim: rgba(0, 0, 0, 0.35);
+
+  --accent: #1f5b8f; /* 6.6:1 on the page */
+  --accent-strong: #174a76;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(31, 91, 143, 0.09);
+  --accent-line: rgba(31, 91, 143, 0.35);
+
+  --up: #1a6f3f;
+  --down: #a8291c;
+  --warn: #8a5300;
+  --alert: #8c351f;
+  --alert-soft: rgba(140, 53, 31, 0.08);
+
+  --divider: rgba(0, 0, 0, 0.15);
 }
 
 :root {
-  /* Legacy names, all folded into the monochrome set. */
+  /* Legacy names. These stay neutral on purpose: they were sprayed across old
+     rules, and pointing them at the real semantic colours would put hue on
+     things that mean nothing. Use --up, --down, --warn and --alert directly. */
   --page: var(--bg);
   --surface-2: var(--chip-soft);
   --text: var(--ink);

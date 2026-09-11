@@ -9,6 +9,7 @@
 // before it is written. That keeps the diff to real changes.
 
 import { chromium } from 'playwright';
+import { openPage } from './past-setup.mjs';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -60,7 +61,7 @@ async function capture(page, name) {
 
 for (const state of STATES) {
   console.log(state);
-  const page = await browser.newPage({ viewport: { width: 1728, height: 1117 } });
+  const page = await openPage(browser, { viewport: { width: 1728, height: 1117 } });
   await page.goto(`${base}/?state=${state}`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(600);
 

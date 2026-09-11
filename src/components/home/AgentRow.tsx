@@ -8,6 +8,14 @@ import { useStore } from '../../state/store';
  * A stopped agent leads with why, then who stopped it and when, so the first
  * words carry the reason even where the line runs out of room.
  */
+/** The status word, split out so it can be read on its own. */
+function statusTail(a: AgentFigure): string {
+  if (a.status === 'Running') return a.liveLine;
+  return [a.why ?? a.liveLine, a.changedBy ? `by ${a.changedBy}` : '', a.changedAtMs ? fmtTime(a.changedAtMs) : '']
+    .filter(Boolean)
+    .join(' · ');
+}
+
 function statusLine(a: AgentFigure): string {
   if (a.status === 'Running') return `${a.status} - ${a.liveLine}`;
   const tail = [a.why ?? a.liveLine, a.changedBy ? `by ${a.changedBy}` : '', a.changedAtMs ? fmtTime(a.changedAtMs) : '']
@@ -32,7 +40,7 @@ export function AgentRow() {
         return (
           <button
             key={a.id}
-            className={`agent-card${selected ? ' selected' : ''}`}
+            className={`agent-card is-${a.status.toLowerCase().replace(/s+/g, '-')}${selected ? ' selected' : ''}`}
             onClick={() => select(selected ? null : { kind: 'agent', id: a.id })}
             title={fullStory(a)}
           >
@@ -46,7 +54,7 @@ export function AgentRow() {
               ))}
             </span>
             <span className="live" title={line}>
-              {line}
+              <span className="st">{a.status}</span> - {statusTail(a)}
             </span>
           </button>
         );

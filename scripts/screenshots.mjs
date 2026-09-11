@@ -2,6 +2,7 @@
 // Usage: npm run dev (in another terminal), then: node scripts/screenshots.mjs [outDir]
 
 import { chromium } from 'playwright';
+import { openPage } from './past-setup.mjs';
 import { mkdirSync } from 'node:fs';
 
 const base = process.env.BASE ?? 'http://localhost:5173';
@@ -9,8 +10,8 @@ const out = process.argv[2] ?? 'screenshots';
 mkdirSync(out, { recursive: true });
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
-const page = await ctx.newPage();
+const page = await openPage(browser, { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+const ctx = page.context();
 page.on('pageerror', (e) => console.error('PAGE ERROR', e.message));
 page.on('console', (m) => {
   if (m.type() === 'error') console.error('CONSOLE', m.text());

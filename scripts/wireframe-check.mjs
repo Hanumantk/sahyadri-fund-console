@@ -1,9 +1,10 @@
 import { chromium } from 'playwright';
+import { openPage } from './past-setup.mjs';
 
 const browser = await chromium.launch();
 
 async function shot(name, { w = 1728, h = 1117, url = 'http://localhost:5173/?state=normal', before } = {}) {
-  const page = await browser.newPage({ viewport: { width: w, height: h } });
+  const page = await openPage(browser, { viewport: { width: w, height: h } });
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
   if (before) await before(page);
@@ -15,7 +16,16 @@ async function shot(name, { w = 1728, h = 1117, url = 'http://localhost:5173/?st
   const probe = document.createElement('span');
   document.body.appendChild(probe);
   const allowed = new Set(['rgba(0, 0, 0, 0)']);
-  for (const name of ['--bg','--surface','--sidebar-bg','--ink','--text-2','--text-3','--placeholder','--chip','--chip-soft','--chip-hover','--inset','--inset-soft','--track','--fill','--line-strong','--line','--glass','--ink-50','--scrim']) {
+    const names = new Set();
+  for (const sheet of document.styleSheets) {
+    let rules;
+    try { rules = sheet.cssRules; } catch { continue; }
+    for (const rule of rules || []) {
+      if (!rule.style) continue;
+      for (const prop of rule.style) if (prop.startsWith('--')) names.add(prop);
+    }
+  }
+  for (const name of names) {
     probe.style.color = 'var(' + name + ')';
     allowed.add(getComputedStyle(probe).color);
   }

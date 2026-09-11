@@ -1,11 +1,12 @@
 // Measures the Home screen against the wireframe grid at 1728 x 1117.
 import { chromium } from 'playwright';
+import { openPage } from './past-setup.mjs';
 
 const url = process.env.URL ?? 'http://localhost:5173/?state=normal';
 const out = process.env.OUT ?? 'screenshots/wireframe-1728.png';
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 1728, height: 1117 } });
+const page = await openPage(browser, { viewport: { width: 1728, height: 1117 } });
 await page.goto(url, { waitUntil: 'networkidle' });
 await page.waitForTimeout(700);
 

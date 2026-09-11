@@ -16,7 +16,9 @@ export function Chip({ children }: { tone?: Tone; icon?: IconName; children: Rea
 
 /** Status, as plain text. */
 export function StatusBadge({ status }: { status: AgentStatus }) {
-  return <span className="badge">{status}</span>;
+  // Running is the ordinary case and carries no colour.
+  const slug = status.toLowerCase().replace(/s+/g, '-');
+  return <span className={`badge is-${slug}`}>{status}</span>;
 }
 
 /** One track, one fill. Level is the only thing a bar says here. */
