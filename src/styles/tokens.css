@@ -159,6 +159,11 @@
   /* Columns 1-4 of the split, measured to the divider. */
   --split-left: calc(4 * var(--col) + 3 * var(--gutter));
 
+  /* Room between a field's content and the rule beside it. The rule sits
+     centred in the channel this opens up, so the clearance is equal on both
+     sides of it. */
+  --block-pad: 28px;
+
   /* Vertical rhythm */
   --gap-rule-kpi: 72px; /* the top-bar rule to the first numbers */
   --gap-kpi-agents: 72px;

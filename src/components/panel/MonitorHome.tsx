@@ -7,8 +7,12 @@ export function MonitorHome() {
   const { vm, select } = useStore();
   return (
     <>
+      {/* What the agent watches is the two headings below, so saying it here as
+          well cost two lines at the top of the panel. What is left is the part
+          that cannot be seen anywhere else: when it last ran, and what catches
+          it if it stops. */}
       <div className="panel-desc">
-        {vm.agents.monitoring.job} Last check {fmtTimeSec(vm.health.checkedMs)} · checks every 30 seconds · a plain heartbeat outside the agent raises "Monitor not responding" if a check is missed.
+        Last check {fmtTimeSec(vm.health.checkedMs)} · checks every 30 seconds · a plain heartbeat outside the agent raises "Monitor not responding" if a check is missed.
       </div>
       <div className="panel-cols">
         <Section title={`Feeds · ${vm.health.live} of ${vm.health.total} live`}>

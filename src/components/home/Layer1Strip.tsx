@@ -21,10 +21,6 @@ export function Layer1Strip() {
   /** How close a limit is to being broken, in the same words the row uses. */
   const limitTone = (status: string) => (status === 'broken' ? ' v-over' : status === 'near' ? ' v-near' : '');
 
-  const gapAbs = Math.abs(f.gapPts).toFixed(2);
-  const gapText =
-    Math.abs(f.gapPts) < 0.005 ? 'Level with the market' : f.gapPts < 0 ? `${gapAbs} pts behind market` : `${gapAbs} pts ahead of market`;
-
   return (
     <div className="layer1">
       {/* Fund value against the Nifty 50 */}
@@ -35,9 +31,7 @@ export function Layer1Strip() {
             {staleLabel && <span className="asof">{staleLabel}</span>}
           </div>
           <div className={`headline${stale ? ' stale' : ''}`}>{fmtCr(f.fundValue)}</div>
-          <div className={`block-sub${dir(f.dayChange)}`}>
-            {fmtSignedCr(f.dayChange)} today ({fmtSignedPct(f.dayChangePct)})
-          </div>
+          <div className={`block-sub${dir(f.dayChange)}`}>{fmtSignedCr(f.dayChange)} today</div>
           <div className="block-sub">
             Official {fmtPrice(f.official.navPerUnit)}/unit · {fmtDayMonth(f.official.dateMs)}
           </div>
@@ -46,9 +40,7 @@ export function Layer1Strip() {
         <div className="block-rows">
           <div className="row">
             <span className="k">Fund</span>
-            <span className={`v${dir(f.dayChangePct)}`}>
-              {fmtSignedPct(f.dayChangePct)} · {gapText}
-            </span>
+            <span className={`v${dir(f.dayChangePct)}`}>{fmtSignedPct(f.dayChangePct)}</span>
           </div>
           <div className="row">
             <span className="k">Nifty 50</span>
@@ -66,7 +58,7 @@ export function Layer1Strip() {
           </div>
           <div className={`headline${stale ? ' stale' : ''}`}>{fmtPct(f.drawdownPct)}</div>
           <div className="block-sub">
-            Below peak of {fmtPrice(f.peak.navPerUnit)} per unit · {fmtDayMonth(f.peak.dateMs)} · {f.roomPts.toFixed(1)} pts of room left
+            Below peak of {fmtPrice(f.peak.navPerUnit)} per unit · {fmtDayMonth(f.peak.dateMs)}
           </div>
         </div>
         <div className="block-rule" />
@@ -103,7 +95,7 @@ export function Layer1Strip() {
             {vm.limits.broken.length
               ? "Agents can't add to a broken limit · nothing is forced to sell"
               : vm.limits.near.length
-                ? `Near means above ${LIMITS.nearLimitPct}% of a limit · ${PORTFOLIO_SUMMARY.exceptionCount} on exception · set on Rules`
+                ? `${PORTFOLIO_SUMMARY.exceptionCount} on exception · set on Rules`
                 : `Nothing above ${LIMITS.nearLimitPct}% of its limit · set on Rules`}
           </div>
         </div>

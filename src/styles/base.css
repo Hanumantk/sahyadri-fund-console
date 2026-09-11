@@ -604,19 +604,32 @@ a,
   display: grid;
   grid-template-rows: subgrid;
   min-width: 0;
+  padding-right: var(--block-pad);
 }
-/* A hairline in the gutter turns the strip into four ledger columns. These
-   blocks used to be held narrower than their cells so they would not read as
-   one banded strip; the rule does that job properly, so they fill the grid
-   again and the rule sits centred in the gutter between them. */
+/* A hairline turns the strip into four ledger columns. It sits centred in the
+   channel made by the gutter plus the padding above, so a value never runs up
+   against it and the clearance is the same on both sides. */
 .block + .block::before {
   content: '';
   position: absolute;
-  left: calc(var(--gutter) / -2);
+  left: calc((var(--gutter) + var(--block-pad)) / -2);
   top: 2px;
   bottom: 2px;
   width: 1px;
   background: var(--divider);
+}
+/* Below the design width the cells are narrower than the content wants, so the
+   channel hands width back rather than pushing every value onto its own line.
+   These are the breakpoints the shell already turns on. */
+@media (max-width: 1727px) {
+  :root {
+    --block-pad: 16px;
+  }
+}
+@media (max-width: 1439px) {
+  :root {
+    --block-pad: 10px;
+  }
 }
 /* The head holds label, value and sub-lines. A minimum height keeps the three
    rules on one line across blocks, whatever the sub-lines say. */
