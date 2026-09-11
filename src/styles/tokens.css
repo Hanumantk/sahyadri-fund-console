@@ -162,7 +162,7 @@
   /* Room between a field's content and the rule beside it. The rule sits
      centred in the channel this opens up, so the clearance is equal on both
      sides of it. */
-  --block-pad: 28px;
+  --block-pad: 24px;
 
   /* Vertical rhythm */
   --gap-rule-kpi: 72px; /* the top-bar rule to the first numbers */
@@ -173,8 +173,8 @@
 
   /* Shape */
   --radius: 10px;
-  --radius-sm: 8px;
-  --radius-chip: 8px;
+  --radius-sm: 6px;
+  --radius-chip: 6px;
   --radius-bar: 5px;
   /* The audit search is the one control shaped as a pill: it is the field you
      are meant to reach for on that page, so it reads as a search box on sight. */

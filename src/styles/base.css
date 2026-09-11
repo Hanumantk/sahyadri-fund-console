@@ -507,18 +507,17 @@ a,
   white-space: nowrap;
 }
 
+/* Not a chip any more. A flag inside a card that is already filled, rounded
+   and padded was a box in a box, and it opened a second and third left edge
+   13 and 15px inside the card's own. It is a line of text with a glyph. */
 .warn-chip {
-  display: inline-flex;
+  display: flex;
   align-items: flex-start;
-  gap: 6px;
-  min-height: 26px;
-  padding: 4px 10px;
-  border-radius: var(--radius);
-  background: var(--chip);
+  gap: 8px;
   color: var(--text-2);
   font-size: var(--fs-em);
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.4;
   text-align: left;
 }
 .warn-chip svg {
@@ -671,7 +670,7 @@ a,
 .block-sub {
   margin-top: 4px;
   font-size: var(--fs-14);
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text-3);
 }
 .block-rule {
@@ -680,10 +679,10 @@ a,
   margin-top: 12px;
 }
 .block-rows {
-  margin-top: 10px;
+  margin-top: 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .row {
   display: flex;
@@ -694,7 +693,7 @@ a,
 }
 .row .k {
   flex: none;
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text-3);
   min-width: 0;
 }
@@ -725,8 +724,8 @@ a,
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 12px 14px;
-  border: 1px solid var(--line-strong);
+  padding: 12px 16px;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--surface);
   text-align: left;
@@ -816,7 +815,7 @@ a,
 /* Matches the Monitoring heading to its description, so the two sections
    start at the same distance below their headings. */
 .queue-list {
-  margin-top: 9px;
+  margin-top: 8px;
   padding-top: 1px;
   padding-bottom: 12px;
   overflow: auto;
@@ -841,8 +840,8 @@ a,
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 10px 12px;
-  border: 1px solid var(--line-strong);
+  padding: 12px 16px;
+  border: 1px solid transparent;
   border-radius: var(--radius);
   background: var(--surface);
   text-align: left;
@@ -954,11 +953,11 @@ a,
 
 .list {
   margin-top: 8px;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .card .list {
   margin-top: 0;
@@ -985,7 +984,7 @@ a,
 .list-row .sub {
   font-size: var(--fs-14);
   font-weight: 400;
-  color: var(--placeholder);
+  color: var(--text-3);
 }
 
 .card {
@@ -4527,4 +4526,53 @@ input.inline-input:focus,
 .list-row .r.is-needs-you {
   color: var(--alert);
   font-weight: 600;
+}
+
+/* The last boxes inside a box. A decision card is already a filled, rounded,
+   clickable object; the action label and the timer sat inside it as two more
+   filled, rounded pills. They are the card's own text now, on the card's own
+   left edge, separated by a dot. The card is the control. */
+.dcard .actions {
+  gap: 0;
+  font-size: var(--fs-body);
+}
+.dcard .chip-btn,
+.dcard .timer {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: var(--fs-body);
+  font-weight: 400;
+  color: var(--text-3);
+}
+.dcard .chip-btn {
+  color: var(--text-2);
+  font-weight: 500;
+}
+.dcard .actions > * + *::before {
+  content: '·';
+  margin: 0 8px;
+  color: var(--text-3);
+  font-weight: 400;
+}
+/* Urgency still reads: it is the only colour left in the row. */
+.dcard .timer.is-urgent { color: var(--warn); }
+.dcard .timer.is-alert { color: var(--alert); }
+
+/* Closed items are metadata, at the one metadata weight. */
+.closed-item .t,
+.closed-item .when {
+  font-weight: 400;
+}
+
+/* The border used to be the only thing saying these were clickable, and it said
+   it all the time. A lift under the pointer says it at the moment it matters,
+   and selection takes the accent, which is the colour for where you act. */
+.dcard:hover,
+.agent-card:hover {
+  background: var(--chip-soft);
+}
+.dcard.selected,
+.agent-card.selected {
+  box-shadow: 0 0 0 1px var(--accent);
 }
