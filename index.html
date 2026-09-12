@@ -21,7 +21,7 @@
           // Light is the deterministic fallback when the media query is unavailable.
         }
         const theme = saved === 'light' || saved === 'dark' ? saved : prefersDark ? 'dark' : 'light';
-        const canvas = theme === 'dark' ? '#070d16' : '#f4f7fb';
+        const canvas = theme === 'dark' ? '#0b1420' : '#f4f7fb';
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;
         document.documentElement.style.backgroundColor = canvas;
