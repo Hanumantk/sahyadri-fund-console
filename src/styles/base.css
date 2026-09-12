@@ -5660,9 +5660,17 @@ table.audit tr.hit td {
 
 /* Dark navigation-matched content surfaces ------------------------------ */
 
+:root[data-theme='dark'] .agent-row {
+  padding: 0;
+}
+
 :root[data-theme='dark'] .agent-card.selected,
 :root[data-theme='dark'] .dcard.selected {
   background: var(--sidebar-bg);
+}
+
+:root[data-theme='dark'] .agent-card.selected {
+  box-shadow: none;
 }
 
 :root[data-theme='dark'] .holding-card,
