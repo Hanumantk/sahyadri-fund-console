@@ -5657,3 +5657,37 @@ table.audit tr.hit td {
 .launch-checks > div.missing > span {
   color: var(--alert);
 }
+
+/* Dark navigation-matched content surfaces ------------------------------ */
+
+:root[data-theme='dark'] .agent-card.selected,
+:root[data-theme='dark'] .dcard.selected {
+  background: var(--sidebar-bg);
+}
+
+:root[data-theme='dark'] .holding-card,
+:root[data-theme='dark'] .holding-card:hover,
+:root[data-theme='dark'] .holding-card.selected,
+:root[data-theme='dark'] .holding-card.selected:hover,
+:root[data-theme='dark'] .holding-detail-panel,
+:root[data-theme='dark'] .holding-detail-panel .card,
+:root[data-theme='dark'] .holding-detail-panel .src-card,
+:root[data-theme='dark'] .driver-note-row {
+  background: var(--sidebar-bg);
+}
+
+:root[data-theme='dark'] .rules-page .mandate-glass,
+:root[data-theme='dark'] .rules-page .rules-table-wrap,
+:root[data-theme='dark'] .rules-page .autonomy-agent,
+:root[data-theme='dark'] .rules-page .autonomy-column,
+:root[data-theme='dark'] .rules-page .override-list > div,
+:root[data-theme='dark'] .rules-page .prohibited-list > div,
+:root[data-theme='dark'] .rules-page .exception-card,
+:root[data-theme='dark'] .rules-page .history-list,
+:root[data-theme='dark'] .rules-page .never-fired-list,
+:root[data-theme='dark'] .rules-page .never-fired-list > div,
+:root[data-theme='dark'] .audit-filter input,
+:root[data-theme='dark'] table.audit,
+:root[data-theme='dark'] table.audit th {
+  background: var(--sidebar-bg);
+}
