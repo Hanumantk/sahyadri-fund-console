@@ -2,9 +2,9 @@
    Product tokens
 
    The interface uses one quiet cool-grey canvas, white working surfaces and a
-   dark navigation anchor. Cobalt identifies interaction and selection. Green,
-   amber and red are reserved for outcomes, attention and breaches, so colour
-   always has a job rather than becoming another layer of decoration.
+   clearly bounded navigation rail. Cobalt identifies interaction and selection.
+   Green, amber and red are reserved for outcomes, attention and breaches, so
+   colour always has a job rather than becoming another layer of decoration.
    --------------------------------------------------------------------------- */
 
 :root,
@@ -18,15 +18,15 @@
   --surface-subtle: #fafbfd;
   --control-bg: #ffffff;
   --table-bg: #ffffff;
-  --sidebar-bg: #0e1a2b;
-  --sidebar-ink: #f7faff;
-  --sidebar-text: #b8c5d6;
-  --sidebar-attention: #ffb3a8;
-  --sidebar-hover: rgba(255, 255, 255, 0.07);
-  --sidebar-line: rgba(255, 255, 255, 0.1);
-  --sidebar-control-line: rgba(184, 197, 214, 0.42);
-  --sidebar-control-hover-line: rgba(247, 250, 255, 0.62);
-  --sidebar-control-hover: rgba(247, 250, 255, 0.13);
+  --sidebar-bg: #ffffff;
+  --sidebar-ink: #182230;
+  --sidebar-text: #58687a;
+  --sidebar-attention: #b42318;
+  --sidebar-hover: #eef3f8;
+  --sidebar-line: #dbe3ec;
+  --sidebar-control-line: #8a9aab;
+  --sidebar-control-hover-line: #65768a;
+  --sidebar-control-hover: #e7edf5;
   --tooltip-bg: #172438;
   --tooltip-ink: #eef4fb;
 

@@ -4727,7 +4727,7 @@ body {
 }
 
 .sidebar {
-  border-right: 0;
+  border-right: 1px solid var(--sidebar-line);
   background: var(--sidebar-bg);
 }
 
