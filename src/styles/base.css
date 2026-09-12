@@ -4801,6 +4801,28 @@ body {
   color: var(--alert);
 }
 
+/* Claude-like dark chrome stays quiet: the top bar merges into the canvas and
+   navigation selection is a muted blue-grey wash instead of a bright fill. */
+:root[data-theme='dark'] .topbar,
+:root[data-theme='dark'] .shell.rail .topbar {
+  background: var(--bg);
+}
+
+:root[data-theme='dark'] .nav-item.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: none;
+}
+
+:root[data-theme='dark'] .nav-item.active svg {
+  color: var(--accent);
+}
+
+:root[data-theme='dark'] .nav-item.active .nav-count {
+  background: transparent;
+  color: var(--sidebar-attention);
+}
+
 .main {
   background: var(--bg);
 }

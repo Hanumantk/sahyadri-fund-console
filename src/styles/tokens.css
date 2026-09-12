@@ -156,85 +156,83 @@
   --nav-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
-/* Dark keeps the same hierarchy as light: the canvas recedes, working
-   surfaces step forward once, and colour remains reserved for interaction or
-   meaning. It is deliberately navy rather than black so charts and status
-   colours retain their character without glowing against the page. */
+/* Dark uses a warm charcoal hierarchy: the canvas stays quiet, graphite
+   working surfaces step forward, and colour remains reserved for interaction
+   or meaning. */
 :root[data-theme='dark'] {
   color-scheme: dark;
 
   /* Canvas and surfaces */
-  --bg: #0b1420;
-  --surface: #132235;
-  --surface-muted: #192b40;
-  --surface-subtle: #1d3047;
-  --control-bg: #101e2e;
-  --table-bg: #132235;
-  --sidebar-bg: #07111d;
-  --sidebar-ink: #f3f7fc;
-  --sidebar-text: #b7c5d6;
-  --sidebar-attention: #ffb0a6;
-  --sidebar-hover: rgba(255, 255, 255, 0.08);
-  --sidebar-line: rgba(255, 255, 255, 0.12);
-  --sidebar-control-line: rgba(183, 197, 214, 0.42);
-  --sidebar-control-hover-line: rgba(243, 247, 252, 0.62);
-  --sidebar-control-hover: rgba(243, 247, 252, 0.13);
-  --tooltip-bg: #24344a;
-  --tooltip-ink: #f2f6fb;
+  --bg: #1a1a18;
+  --surface: #2a2a27;
+  --surface-muted: #302f2c;
+  --surface-subtle: #34332f;
+  --control-bg: #242421;
+  --table-bg: #2a2a27;
+  --sidebar-bg: #141412;
+  --sidebar-ink: #faf9f5;
+  --sidebar-text: #c9c7bc;
+  --sidebar-attention: #d9907f;
+  --sidebar-hover: rgba(250, 249, 245, 0.08);
+  --sidebar-line: rgba(250, 249, 245, 0.1);
+  --sidebar-control-line: rgba(201, 199, 188, 0.46);
+  --sidebar-control-hover-line: rgba(250, 249, 245, 0.68);
+  --sidebar-control-hover: rgba(250, 249, 245, 0.13);
+  --tooltip-bg: #3a3935;
+  --tooltip-ink: #faf9f5;
 
   /* Type */
-  --ink: #eef4fb;
-  --text-2: #c4cfdd;
-  --text-3: #a5b3c4;
-  --placeholder: #95a6ba;
+  --ink: #faf9f5;
+  --text-2: #c9c7bc;
+  --text-3: #a3a099;
+  --placeholder: #9d9b95;
 
   /* Quiet controls and recessed regions */
-  --chip: #24384e;
-  --chip-soft: #1c2e43;
-  --chip-hover: #2a4058;
-  --inset: #0d1927;
-  --inset-soft: #112032;
-  --track: #2b3d52;
-  --fill: #7898ff;
+  --chip: #3a3935;
+  --chip-soft: #302f2c;
+  --chip-hover: #474641;
+  --inset: #141412;
+  --inset-soft: #1f1f1d;
+  --track: #454440;
+  --fill: #91a6c2;
 
   /* Lines and elevation */
-  --line: #2d4056;
-  --line-strong: #58718c;
-  --divider: #32475f;
-  --glass: rgba(19, 34, 53, 0.96);
-  --ink-50: rgba(238, 244, 251, 0.38);
-  --scrim: rgba(2, 8, 15, 0.74);
+  --line: rgba(255, 255, 255, 0.18);
+  --line-strong: rgba(255, 255, 255, 0.38);
+  --divider: rgba(255, 255, 255, 0.14);
+  --glass: rgba(45, 45, 43, 0.94);
+  --ink-50: rgba(250, 249, 245, 0.36);
+  --scrim: rgba(0, 0, 0, 0.72);
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22), 0 5px 18px rgba(0, 0, 0, 0.13);
   --shadow-sm: 0 10px 28px rgba(0, 0, 0, 0.28);
   --shadow-md: 0 22px 56px rgba(0, 0, 0, 0.38);
   --shadow-top: 0 -10px 28px rgba(0, 0, 0, 0.24);
 
   /* Interaction */
-  --accent: #7898ff;
-  --accent-strong: #90a9ff;
-  --accent-ink: #08121f;
-  --accent-soft: #1d2d52;
-  --accent-line: #4b67a0;
-  --info: #8db8ff;
-  --info-soft: #172c49;
+  --accent: #91a6c2;
+  --accent-strong: #a9bad0;
+  --accent-ink: #141716;
+  --accent-soft: #252a2f;
+  --accent-line: #5b6d7f;
+  --info: #91a6c2;
+  --info-soft: #242e35;
 
   /* Meaning */
-  --success: #6fd5ab;
-  --success-soft: #12372c;
-  --up: #6fd5ab;
-  --down: #ff958c;
-  --warn: #f2c469;
-  --warn-soft: #3a2d14;
-  --warn-line: #696555;
-  --alert: #ff958c;
-  --alert-soft: #3b1f25;
-  --alert-line: #69555f;
+  --success: #8dac91;
+  --success-soft: #273128;
+  --up: #8dac91;
+  --down: #d9907f;
+  --warn: #c5b278;
+  --warn-soft: #373224;
+  --warn-line: #6c634a;
+  --alert: #d9907f;
+  --alert-soft: #3b2722;
+  --alert-line: #73544b;
 
-  /* The two lightest bands take dark labels; the remaining bands are dark
-     enough for the standard light ink used by their labels. */
-  --chart-1: #90a9ff;
-  --chart-2: #7898ee;
-  --chart-3: #4a6cae;
-  --chart-4: #375586;
-  --chart-5: #293f61;
+  /* Muted blue-greys retain category separation without cooling the whole UI. */
+  --chart-1: #a8bdd1;
+  --chart-2: #829eb8;
+  --chart-3: #536e86;
+  --chart-4: #40596e;
+  --chart-5: #303f4c;
 }
