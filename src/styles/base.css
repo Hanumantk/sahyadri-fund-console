@@ -4678,6 +4678,22 @@ body {
   scrollbar-width: thin;
 }
 
+/* Keep every scroll region usable while removing vertical scrollbar chrome.
+   Width controls vertical scrollbars; height preserves horizontal scrollbars. */
+*::-webkit-scrollbar {
+  width: 0;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-chip);
+  background: var(--line-strong);
+}
+
 /* Shell -------------------------------------------------------------------- */
 
 .topbar {
