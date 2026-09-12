@@ -3,7 +3,31 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=1280" />
+    <meta name="theme-color" content="#f4f7fb" />
     <title>Sahyadri India Equity Fund</title>
+    <script>
+      (() => {
+        const key = 'sahyadri-color-theme';
+        let saved = null;
+        try {
+          saved = window.localStorage.getItem(key);
+        } catch {
+          // A private or locked-down browser can still follow its system theme.
+        }
+        let prefersDark = false;
+        try {
+          prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        } catch {
+          // Light is the deterministic fallback when the media query is unavailable.
+        }
+        const theme = saved === 'light' || saved === 'dark' ? saved : prefersDark ? 'dark' : 'light';
+        const canvas = theme === 'dark' ? '#0b1420' : '#f4f7fb';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document.documentElement.style.backgroundColor = canvas;
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', canvas);
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

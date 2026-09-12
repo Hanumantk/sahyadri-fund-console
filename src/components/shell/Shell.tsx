@@ -5,6 +5,7 @@ import { FUND, STATES, type StateName } from '../../data/scenario';
 import { useStore } from '../../state/store';
 import { Icon } from '../ui/Icon';
 import { MARKET_CLOSE_MS } from '../../data/clock';
+import { ThemeToggle } from './ThemeToggle';
 
 const RAIL_BELOW = 1440;
 
@@ -124,8 +125,11 @@ export function Shell({ children, devVisible }: { children: ReactNode; devVisibl
           <NavItem to="/settings" icon="settings" label="Settings" />
         </nav>
         <div className="user-line">
-          <strong>{vm.user.name}</strong>
-          <span>{vm.user.role}</span>
+          <div className="user-copy">
+            <strong>{vm.user.name}</strong>
+            <span>{vm.user.role}</span>
+          </div>
+          <ThemeToggle />
         </div>
       </aside>
 

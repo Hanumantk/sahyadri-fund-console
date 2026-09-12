@@ -24,6 +24,9 @@
   --sidebar-attention: #ffb3a8;
   --sidebar-hover: rgba(255, 255, 255, 0.07);
   --sidebar-line: rgba(255, 255, 255, 0.1);
+  --sidebar-control-line: rgba(184, 197, 214, 0.42);
+  --sidebar-control-hover-line: rgba(247, 250, 255, 0.62);
+  --sidebar-control-hover: rgba(247, 250, 255, 0.13);
   --tooltip-bg: #172438;
   --tooltip-ink: #eef4fb;
 
@@ -70,8 +73,10 @@
   --down: #b42318;
   --warn: #8a5b00;
   --warn-soft: #fff4d6;
+  --warn-line: #d6bf7a;
   --alert: #b42318;
   --alert-soft: #fdecea;
+  --alert-line: #dba8a4;
   --limit-over: var(--alert);
   --limit-over-bg: var(--alert-soft);
 
@@ -149,4 +154,87 @@
   --fs-nav: var(--fs-em);
 
   --nav-font: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Dark keeps the same hierarchy as light: the canvas recedes, working
+   surfaces step forward once, and colour remains reserved for interaction or
+   meaning. It is deliberately navy rather than black so charts and status
+   colours retain their character without glowing against the page. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Canvas and surfaces */
+  --bg: #0b1420;
+  --surface: #111d2b;
+  --surface-muted: #172536;
+  --surface-subtle: #1a293b;
+  --control-bg: #101b28;
+  --table-bg: #111d2b;
+  --sidebar-bg: #07111d;
+  --sidebar-ink: #f3f7fc;
+  --sidebar-text: #b7c5d6;
+  --sidebar-attention: #ffb0a6;
+  --sidebar-hover: rgba(255, 255, 255, 0.08);
+  --sidebar-line: rgba(255, 255, 255, 0.12);
+  --sidebar-control-line: rgba(183, 197, 214, 0.42);
+  --sidebar-control-hover-line: rgba(243, 247, 252, 0.62);
+  --sidebar-control-hover: rgba(243, 247, 252, 0.13);
+  --tooltip-bg: #24344a;
+  --tooltip-ink: #f2f6fb;
+
+  /* Type */
+  --ink: #eef4fb;
+  --text-2: #c4cfdd;
+  --text-3: #a5b3c4;
+  --placeholder: #95a6ba;
+
+  /* Quiet controls and recessed regions */
+  --chip: #223247;
+  --chip-soft: #1b2a3d;
+  --chip-hover: #293b50;
+  --inset: #0f1b28;
+  --inset-soft: #142231;
+  --track: #2b3a4c;
+  --fill: #7898ff;
+
+  /* Lines and elevation */
+  --line: #29394c;
+  --line-strong: #526a84;
+  --divider: #304156;
+  --glass: rgba(17, 29, 43, 0.96);
+  --ink-50: rgba(238, 244, 251, 0.38);
+  --scrim: rgba(2, 8, 15, 0.74);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.22), 0 5px 18px rgba(0, 0, 0, 0.13);
+  --shadow-sm: 0 10px 28px rgba(0, 0, 0, 0.28);
+  --shadow-md: 0 22px 56px rgba(0, 0, 0, 0.38);
+  --shadow-top: 0 -10px 28px rgba(0, 0, 0, 0.24);
+
+  /* Interaction */
+  --accent: #7898ff;
+  --accent-strong: #90a9ff;
+  --accent-ink: #08121f;
+  --accent-soft: #1d2d52;
+  --accent-line: #4b67a0;
+  --info: #8db8ff;
+  --info-soft: #172c49;
+
+  /* Meaning */
+  --success: #6fd5ab;
+  --success-soft: #12372c;
+  --up: #6fd5ab;
+  --down: #ff958c;
+  --warn: #f2c469;
+  --warn-soft: #3a2d14;
+  --warn-line: #696555;
+  --alert: #ff958c;
+  --alert-soft: #3b1f25;
+  --alert-line: #69555f;
+
+  /* The two lightest bands take dark labels; the remaining bands are dark
+     enough for the standard light ink used by their labels. */
+  --chart-1: #90a9ff;
+  --chart-2: #7898ee;
+  --chart-3: #4a6cae;
+  --chart-4: #375586;
+  --chart-5: #293f61;
 }

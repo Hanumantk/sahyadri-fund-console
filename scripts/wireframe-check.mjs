@@ -3,8 +3,8 @@ import { openPage } from './past-setup.mjs';
 
 const browser = await chromium.launch();
 
-async function shot(name, { w = 1728, h = 1117, url = 'http://localhost:5173/?state=normal', before } = {}) {
-  const page = await openPage(browser, { viewport: { width: w, height: h } });
+async function shot(name, { w = 1728, h = 1117, url = 'http://localhost:5173/?state=normal', before, colorScheme = 'light' } = {}) {
+  const page = await openPage(browser, { viewport: { width: w, height: h }, colorScheme });
   await page.goto(url, { waitUntil: 'networkidle' });
   await page.waitForTimeout(500);
   if (before) await before(page);
@@ -81,5 +81,10 @@ await shot('paused-1728', {
 await shot('audit-1728', { url: 'http://localhost:5173/audit?record=DEC-0911-01' });
 await shot('normal-1440', { w: 1440, h: 900 });
 await shot('normal-1280', { w: 1280, h: 800 });
+await shot('normal-dark-1728', { colorScheme: 'dark' });
+await shot('portfolio-dark-1728', { url: 'http://localhost:5173/portfolio?state=bad', colorScheme: 'dark' });
+await shot('rules-dark-1728', { url: 'http://localhost:5173/rules?state=bad', colorScheme: 'dark' });
+await shot('audit-dark-1728', { url: 'http://localhost:5173/audit?record=DEC-0911-01', colorScheme: 'dark' });
+await shot('normal-dark-1280', { w: 1280, h: 800, colorScheme: 'dark' });
 
 await browser.close();

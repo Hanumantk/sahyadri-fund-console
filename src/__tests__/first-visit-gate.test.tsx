@@ -16,6 +16,7 @@ describe('first-visit fund setup gate', () => {
     expect(await screen.findByRole('heading', { name: 'Fund setup' })).toBeTruthy();
     expect(container.querySelector('.topbar')).toBeNull();
     expect(container.querySelector('.sidebar')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Dark mode' })).toBeNull();
     expect(screen.getByRole('navigation', { name: 'Fund setup steps' })).toBeTruthy();
     expect(container.querySelector('.setup-stage > .setup-actions')).toBeNull();
     expect(container.querySelector('.setup-stage-shell > .setup-actions')).toBeTruthy();
@@ -23,9 +24,10 @@ describe('first-visit fund setup gate', () => {
 
   it('keeps setup out of the returning-visitor journey', async () => {
     window.localStorage.setItem(RULEBOOK_SETUP_STORAGE_KEY, 'complete');
-    render(<MemoryRouter initialEntries={['/setup']}><App /></MemoryRouter>);
+    const { container } = render(<MemoryRouter initialEntries={['/setup']}><App /></MemoryRouter>);
     expect(await screen.findByRole('heading', { name: /Rulebook/ })).toBeTruthy();
     expect(screen.queryByRole('heading', { name: 'Fund setup' })).toBeNull();
+    expect(container.querySelector('.user-line .theme-toggle')).toBe(screen.getByRole('switch', { name: 'Dark mode' }));
   });
 
   it('records completion when the fund launches', () => {

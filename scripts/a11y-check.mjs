@@ -21,19 +21,20 @@ const ratio = (a, b) => {
 };
 
 const VIEWS = [
-  ['home normal', 'http://localhost:5173/?state=normal', null],
-  ['home bad', 'http://localhost:5173/?state=bad', null],
-  ['home calm', 'http://localhost:5173/?state=calm', null],
-  ['proposal', 'http://localhost:5173/?state=normal', (p) => p.click('.dcard >> nth=0')],
-  ['verdict', 'http://localhost:5173/?state=normal', (p) => p.click('.dcard >> nth=1')],
-  ['mismatch', 'http://localhost:5173/?state=normal', (p) => p.click('.dcard >> nth=2')],
-  ['late feed', 'http://localhost:5173/?state=bad', (p) => p.click('.dcard >> nth=3')],
-  ['agent view', 'http://localhost:5173/?state=normal', (p) => p.click('.agent-card >> nth=4')],
-  ['pause dialog', 'http://localhost:5173/?state=normal', (p) => p.click('.pause-slot .btn')],
-  ['portfolio', 'http://localhost:5173/portfolio?state=bad', null],
-  ['rules', 'http://localhost:5173/rules?state=bad', null],
-  ['audit trail', 'http://localhost:5173/audit?record=DEC-0911-01', null],
-  ['settings', 'http://localhost:5173/settings', null],
+  ['home normal', 'http://localhost:5173/?state=normal', null, true],
+  ['home bad', 'http://localhost:5173/?state=bad', null, true],
+  ['home calm', 'http://localhost:5173/?state=calm', null, true],
+  ['proposal', 'http://localhost:5173/?state=normal', (p) => p.click('.dcard >> nth=0'), true],
+  ['verdict', 'http://localhost:5173/?state=normal', (p) => p.click('.dcard >> nth=1'), true],
+  ['mismatch', 'http://localhost:5173/?state=normal', (p) => p.click('.dcard >> nth=2'), true],
+  ['late feed', 'http://localhost:5173/?state=bad', (p) => p.click('.dcard >> nth=3'), true],
+  ['agent view', 'http://localhost:5173/?state=normal', (p) => p.click('.agent-card >> nth=4'), true],
+  ['pause dialog', 'http://localhost:5173/?state=normal', (p) => p.click('.pause-slot .btn'), true],
+  ['portfolio', 'http://localhost:5173/portfolio?state=bad', null, true],
+  ['rules', 'http://localhost:5173/rules?state=bad', null, true],
+  ['audit trail', 'http://localhost:5173/audit?record=DEC-0911-01', null, true],
+  ['settings', 'http://localhost:5173/settings', null, true],
+  ['first-run setup', 'http://localhost:5173/setup', null, false],
 ];
 
 const collect = () => {
@@ -85,28 +86,31 @@ const low = [];
 let total = 0;
 let min = Infinity;
 
-for (const [name, url, act] of VIEWS) {
-  const page = await openPage(browser, { viewport: { width: 1728, height: 1117 } });
-  await page.goto(url, { waitUntil: 'networkidle' });
-  await page.waitForTimeout(400);
-  if (act) {
-    await act(page);
-    await page.waitForTimeout(300);
+for (const theme of ['light', 'dark']) {
+  for (const [name, url, act, pastSetup] of VIEWS) {
+    const options = { viewport: { width: 1728, height: 1117 }, colorScheme: theme };
+    const page = pastSetup ? await openPage(browser, options) : await browser.newPage(options);
+    await page.goto(url, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    if (act) {
+      await act(page);
+      await page.waitForTimeout(300);
+    }
+    const rows = await page.evaluate(collect);
+    total += rows.length;
+    for (const r of rows) {
+      min = Math.min(min, r.size);
+      if (r.size < MIN_PX) small.push(`${name} · ${theme}: ${r.size}px  ${r.cls} :: ${r.text}`);
+      const bg = parse(r.bg).length ? parse(r.bg) : [255, 255, 255];
+      const cr = ratio(over(parse(r.color), bg), bg);
+      if (cr < MIN_CONTRAST) low.push(`${name} · ${theme}: ${cr.toFixed(2)}:1  ${r.cls} (${r.color} on ${r.bg}) :: ${r.text}`);
+    }
+    await page.close();
   }
-  const rows = await page.evaluate(collect);
-  total += rows.length;
-  for (const r of rows) {
-    min = Math.min(min, r.size);
-    if (r.size < MIN_PX) small.push(`${name}: ${r.size}px  ${r.cls} :: ${r.text}`);
-    const bg = parse(r.bg).length ? parse(r.bg) : [255, 255, 255];
-    const cr = ratio(over(parse(r.color), bg), bg);
-    if (cr < MIN_CONTRAST) low.push(`${name}: ${cr.toFixed(2)}:1  ${r.cls} (${r.color} on ${r.bg}) :: ${r.text}`);
-  }
-  await page.close();
 }
 await browser.close();
 
-console.log(`checked ${total} text elements across ${VIEWS.length} views`);
+console.log(`checked ${total} text elements across ${VIEWS.length} views in both themes`);
 console.log(`smallest text anywhere: ${min}px`);
 console.log(`--- below ${MIN_PX}px ---`);
 console.log(small.length ? [...new Set(small)].join('\n') : 'none');

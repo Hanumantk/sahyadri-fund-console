@@ -34,7 +34,9 @@ type Name =
   | 'chevron-left'
   | 'chevron-right'
   | 'bulb'
-  | 'sidebar';
+  | 'sidebar'
+  | 'sun'
+  | 'moon';
 
 const PATHS: Record<Name, string> = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
@@ -70,6 +72,8 @@ const PATHS: Record<Name, string> = {
   'chevron-right': 'M9 4l7 8-7 8',
   sidebar: 'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM9.5 5v14',
   bulb: 'M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.8 10.7c.7.6 1.1 1.4 1.2 2.3h5.2c.1-.9.5-1.7 1.2-2.3A6 6 0 0 0 12 3z',
+  sun: 'M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+  moon: 'M20.7 13.1A8.5 8.5 0 1 1 10.9 3.3 6.8 6.8 0 0 0 20.7 13.1z',
 };
 
 // A few glyphs are drawn on their own box so they keep their aspect ratio.
