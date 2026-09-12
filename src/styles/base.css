@@ -4584,3 +4584,963 @@ input.inline-input:focus,
 .list.feeds .l {
   color: var(--text-2);
 }
+
+/* ---------------------------------------------------------------------------
+   Calm product system
+
+   One neutral canvas holds the product together. Large regions establish the
+   reading order; small semantic marks carry urgency. This deliberately avoids
+   stacking equally loud cards inside equally loud cards.
+   --------------------------------------------------------------------------- */
+
+body {
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+* {
+  scrollbar-color: var(--line-strong) transparent;
+  scrollbar-width: thin;
+}
+
+/* Shell -------------------------------------------------------------------- */
+
+.topbar {
+  z-index: 10;
+  align-items: center;
+  padding-top: 0;
+  border-bottom-color: var(--line);
+  background: linear-gradient(to right, var(--sidebar-bg) 0 var(--sidebar-w), var(--surface) var(--sidebar-w));
+  box-shadow: var(--shadow-xs);
+}
+
+.shell.rail .topbar {
+  background: linear-gradient(to right, var(--sidebar-bg) 0 var(--sidebar-rail), var(--surface) var(--sidebar-rail));
+}
+
+.topbar-left {
+  padding-bottom: 0;
+}
+
+.sidebar-toggle,
+.topbar-nav svg,
+.topbar-nav button:hover svg {
+  color: var(--sidebar-text);
+}
+
+.sidebar-toggle:hover {
+  color: var(--sidebar-ink);
+}
+
+.topbar-item {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.topbar-item .label {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.topbar-item .val {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+.tb-right .pause-slot {
+  margin-top: -4px;
+}
+
+.sidebar {
+  border-right: 0;
+  background: var(--sidebar-bg);
+}
+
+.brand,
+.user-line {
+  border-color: var(--sidebar-line);
+}
+
+.brand-name,
+.user-line strong {
+  color: var(--sidebar-ink);
+}
+
+.brand-sub,
+.user-line span {
+  color: var(--sidebar-text);
+}
+
+.nav-item {
+  color: var(--sidebar-text);
+  font-weight: 500;
+}
+
+.nav-item svg {
+  color: var(--sidebar-text);
+}
+
+.nav-item:hover {
+  background: var(--sidebar-hover);
+  color: var(--sidebar-ink);
+}
+
+.nav-item:hover svg {
+  color: var(--sidebar-ink);
+}
+
+.nav-item.active {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.nav-item.active svg {
+  color: var(--accent-ink);
+}
+
+.nav-item .nav-count {
+  color: var(--sidebar-attention);
+}
+
+.nav-item.active .nav-count {
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  background: var(--alert-soft);
+  color: var(--alert);
+}
+
+.main {
+  background: var(--bg);
+}
+
+/* Shared controls and surfaces -------------------------------------------- */
+
+.page-title,
+.rules-title-line h1,
+.portfolio-title-row .page-title {
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.page-sub {
+  color: var(--text-3);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.btn,
+.btn.small {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-2);
+  font-weight: 600;
+  box-shadow: var(--shadow-xs);
+}
+
+.btn:hover,
+.btn.small:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.btn:disabled,
+.btn:disabled:hover {
+  border-color: var(--line);
+  background: var(--surface-muted);
+  color: var(--text-3);
+  box-shadow: none;
+}
+
+.btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.btn.primary:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: var(--accent-ink);
+}
+
+.btn.link,
+.btn.link:hover {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.badge,
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: var(--surface-muted);
+  color: var(--text-2);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.badge[data-tone='outline'],
+.chip[data-tone='outline'] {
+  border-color: var(--line-strong);
+  background: transparent;
+}
+
+.badge[data-tone='blue'],
+.chip[data-tone='blue'] {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.badge[data-tone='green'],
+.chip[data-tone='green'],
+.badge[data-status='Running'] {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.badge[data-tone='amber'],
+.chip[data-tone='amber'],
+.badge[data-status='Waiting'],
+.badge[data-status='Throttled'],
+.badge[data-status='Paused'],
+.badge[data-status='Idle'] {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.badge[data-tone='red'],
+.chip[data-tone='red'],
+.badge[data-status='Needs you'] {
+  background: var(--alert-soft);
+  color: var(--alert);
+}
+
+input,
+select,
+textarea,
+.reason input,
+.reason-inline input,
+input.inline-input {
+  border-color: var(--line-strong);
+  background: var(--control-bg);
+}
+
+:focus-visible,
+.rules-page button:focus-visible,
+.rules-page input:focus-visible,
+.rules-page select:focus-visible,
+.rules-page textarea:focus-visible,
+.rules-page a:focus-visible,
+.setup-page button:focus-visible,
+.setup-page input:focus-visible,
+.setup-page select:focus-visible,
+.setup-page textarea:focus-visible {
+  outline-color: var(--accent);
+}
+
+.dialog {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+
+.dialog:not(.rule-dialog) .btn.primary {
+  border-color: var(--alert);
+  background: var(--alert);
+}
+
+.dialog:not(.rule-dialog) .btn.primary:hover {
+  border-color: var(--alert);
+  background: var(--alert);
+}
+
+.dev-toggle {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Home: overview, exceptions, then supporting context ---------------------- */
+
+.home {
+  padding: 24px var(--pad);
+}
+
+.home > .agent-row,
+.home > .lower {
+  margin-top: 20px;
+}
+
+.layer1 {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.block-label {
+  color: var(--text-3);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  letter-spacing: 0.015em;
+}
+
+.headline {
+  margin-top: 6px;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.block-sub,
+.row .k {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.row .v {
+  color: var(--text-2);
+  font-weight: 600;
+}
+
+.block:has(.v-over) .block-label,
+.block:has(.v-over) .headline {
+  color: var(--alert);
+}
+
+.block:has(.v-near) .bar > i {
+  background: var(--warn);
+}
+
+.block:has(.v-over) .bar > i {
+  background: var(--alert);
+}
+
+.agent-row {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.agent-card {
+  position: relative;
+  padding: 11px 12px 11px 26px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+}
+
+.agent-card + .agent-card {
+  border-left: 1px solid var(--line);
+}
+
+.agent-card::before {
+  position: absolute;
+  top: 18px;
+  left: 12px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  content: '';
+}
+
+.agent-card[data-status='Waiting']::before,
+.agent-card[data-status='Throttled']::before,
+.agent-card[data-status='Paused']::before,
+.agent-card[data-status='Idle']::before {
+  background: var(--warn);
+}
+
+.agent-card[data-status='Needs you']::before {
+  background: var(--alert);
+}
+
+.agent-card .name {
+  font-size: var(--fs-em);
+  font-weight: 650;
+}
+
+.agent-card .live {
+  margin-top: 4px;
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.agent-card:hover {
+  background: var(--surface-muted);
+}
+
+.agent-card.selected {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+.lower {
+  gap: 20px;
+}
+
+.queue,
+.panel {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.queue {
+  border-right: 1px solid var(--line);
+}
+
+.queue-head h2,
+.panel-head h2 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.queue-head .meta,
+.panel-head .meta {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.queue-list {
+  gap: 8px;
+  margin-top: 12px;
+  padding-right: 3px;
+}
+
+.dcard {
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.dcard:has(.is-warn),
+.dcard:has(.is-urgent) {
+  border-left-color: var(--warn);
+}
+
+.dcard:has(.is-alert) {
+  border-left-color: var(--alert);
+}
+
+.dcard:hover {
+  border-color: var(--accent-line);
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dcard.selected {
+  border-color: var(--accent-line);
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: none;
+}
+
+.dcard .ask {
+  font-size: var(--fs-title);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.dcard .warn-chip {
+  gap: 7px;
+  color: var(--text-3);
+  font-size: var(--fs-body);
+  line-height: 1.4;
+}
+
+.dcard .warn-chip.is-warn {
+  color: var(--warn);
+}
+
+.dcard .warn-chip.is-alert {
+  color: var(--alert);
+}
+
+.closed-head {
+  margin-top: 22px;
+  color: var(--text-2);
+}
+
+.panel-body {
+  margin-top: 12px;
+  padding-right: 4px;
+  padding-bottom: 0;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.section-title {
+  color: var(--text-2);
+  font-size: var(--fs-em);
+  font-weight: 650;
+}
+
+.list {
+  border-top-color: var(--line);
+}
+
+.list-row {
+  color: var(--text-3);
+  font-weight: 400;
+}
+
+.card,
+.preview,
+.src-card,
+.done-note {
+  border-color: var(--line);
+  background: var(--surface-muted);
+}
+
+.chat {
+  position: static;
+  flex: none;
+  margin-top: 12px;
+}
+
+.chat-answer,
+.chat-tips {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+}
+
+.chat-input {
+  height: 48px;
+  border-color: var(--line);
+  background: var(--surface-muted);
+  backdrop-filter: none;
+}
+
+.chat-input .send,
+.chat-input .send:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* Portfolio --------------------------------------------------------------- */
+
+.portfolio-summary {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.summary-primary {
+  border-right-color: var(--line);
+}
+
+.summary-filters {
+  border-top-color: var(--line);
+  background: var(--surface-muted);
+}
+
+.summary-filter-link {
+  border-right-color: var(--line);
+}
+
+.summary-filter-link:hover {
+  background: var(--accent-soft);
+}
+
+.summary-filter-link[aria-pressed='true'] {
+  background: var(--accent-soft);
+}
+
+.summary-filter-link[aria-pressed='true'] strong,
+.summary-filter-link[aria-pressed='true'] span {
+  color: var(--accent);
+}
+
+.capital-split {
+  border-color: var(--line);
+  background: var(--track);
+}
+
+.capital-invested,
+.capital-key.invested {
+  background: var(--accent);
+}
+
+.capital-cash,
+.capital-key.cash {
+  background: var(--chart-5);
+}
+
+.segmented {
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.segmented button.selected,
+.stance-display span.selected {
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: var(--shadow-xs);
+}
+
+.toggle-box {
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+[aria-pressed='true'] > .toggle-box,
+.history-filter.selected .toggle-box {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.exposure-map {
+  border-color: var(--line);
+}
+
+.exposure-track {
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.exposure-segment.tone-0,
+.exposure-segment.tone-1 {
+  color: var(--accent-ink);
+}
+
+.exposure-segment.tone-2,
+.exposure-segment.tone-3,
+.exposure-segment.tone-4 {
+  color: var(--ink);
+}
+
+.holding-card {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.holding-card:hover {
+  border-color: var(--accent-line);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.holding-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow-sm);
+}
+
+.holding-allocation,
+.driver-note-row {
+  border-color: var(--line);
+  background: var(--surface-muted);
+}
+
+.state-pill {
+  border: 1px solid var(--line);
+  background: var(--surface-muted);
+}
+
+.state-pill.buying {
+  border-color: var(--accent-line);
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.state-pill.near_limit,
+.state-pill.unsettled,
+.state-pill.stale_price,
+.state-pill.records_disagree {
+  border-color: color-mix(in srgb, var(--warn) 32%, var(--line));
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+.state-pill.over_limit {
+  border-color: color-mix(in srgb, var(--alert) 32%, var(--line));
+  background: var(--alert-soft);
+  color: var(--alert);
+}
+
+.weight-gauge-fill,
+.liquidity-track i {
+  stroke: var(--accent);
+  background: var(--accent);
+}
+
+.pnl-track i.positive {
+  background: var(--up);
+}
+
+.pnl-track i.negative {
+  background: var(--down);
+}
+
+.holding-detail-panel {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Rules ------------------------------------------------------------------- */
+
+.rules-header {
+  background: var(--bg);
+}
+
+.rule-section {
+  border-bottom-color: var(--line);
+}
+
+.rule-section-heading > span,
+.rule-eyebrow {
+  color: var(--accent);
+}
+
+.mandate-glass,
+.autonomy-agent,
+.override-list > div,
+.prohibited-list > div,
+.history-list,
+.never-fired-list {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.mandate-glass {
+  border-top: 3px solid var(--accent);
+  backdrop-filter: none;
+}
+
+.mandate-glass::after {
+  display: none;
+}
+
+.rules-table-wrap {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.rules-table th,
+.setup-limit-head {
+  background: var(--surface-muted);
+}
+
+.rules-table tbody tr:hover td,
+.history-list > div:hover {
+  background: var(--surface-muted);
+}
+
+.autonomy-column,
+.exception-expiry,
+.rehearsal-result,
+.rule-diff > div,
+.limit-live-equivalent {
+  background: var(--surface-muted);
+}
+
+.autonomy-chip {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.autonomy-chip:hover {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.autonomy-chip-shell[data-tooltip]:hover::after,
+.autonomy-chip-shell[data-tooltip]:focus-visible::after {
+  border-color: var(--tooltip-bg);
+  background: var(--tooltip-bg);
+  color: var(--tooltip-ink);
+}
+
+.exception-card {
+  border-color: var(--line);
+  border-left: 4px solid var(--warn);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.exception-expiry {
+  background: var(--warn-soft);
+}
+
+.exception-expiry .btn:last-child {
+  border-color: color-mix(in srgb, var(--alert) 30%, var(--line));
+  background: var(--alert-soft);
+  color: var(--alert);
+}
+
+.rule-lock-label {
+  border-color: var(--line);
+  background: var(--surface-muted);
+}
+
+/* Audit ------------------------------------------------------------------- */
+
+.audit-filter input {
+  border-color: var(--line-strong);
+  background: var(--control-bg);
+  box-shadow: var(--shadow-xs);
+}
+
+table.audit {
+  border-color: var(--line);
+  background: var(--table-bg);
+  box-shadow: var(--shadow-xs);
+}
+
+table.audit th {
+  background: var(--surface-muted);
+  color: var(--text-2);
+}
+
+table.audit th,
+table.audit td {
+  border-bottom-color: var(--line);
+}
+
+table.audit tbody tr:hover td {
+  background: var(--surface-muted);
+}
+
+table.audit tr.hit td {
+  background: var(--accent-soft);
+}
+
+.actor-tag .ai {
+  border-color: var(--accent-line);
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+/* First-run setup --------------------------------------------------------- */
+
+.setup-standalone,
+.setup-actions {
+  background: var(--bg);
+}
+
+.setup-title-row,
+.setup-actions {
+  border-color: var(--line);
+}
+
+.setup-actions {
+  background: var(--surface);
+  box-shadow: var(--shadow-top);
+}
+
+.setup-rail {
+  border-right-color: var(--line);
+}
+
+.setup-rail button:hover {
+  background: var(--surface-muted);
+}
+
+.setup-rail button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.setup-rail button.active small,
+.setup-rail button small,
+.launch-checks > div.complete > span {
+  color: var(--success);
+}
+
+.setup-form-grid input,
+.setup-form-grid select,
+.mandate-editor input,
+.setup-limit-row input,
+.input-affix {
+  border-color: var(--line-strong);
+  background: var(--control-bg);
+}
+
+.mandate-step {
+  border-color: var(--line);
+  border-top: 3px solid var(--accent);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  backdrop-filter: none;
+}
+
+.mandate-warning {
+  border-color: var(--accent-line);
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.acknowledgement input {
+  accent-color: var(--accent);
+}
+
+.stance-cards button {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.stance-cards button:hover {
+  border-color: var(--accent-line);
+  background: var(--surface);
+}
+
+.stance-cards button.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-2);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.stance-cards button.selected strong {
+  color: var(--accent);
+}
+
+.setup-limits,
+.rulebook-prose section {
+  border-color: var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+}
+
+.launch-gate {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+.launch-checks > div.missing > span {
+  color: var(--alert);
+}

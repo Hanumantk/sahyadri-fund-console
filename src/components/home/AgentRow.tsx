@@ -38,7 +38,8 @@ export function AgentRow() {
         return (
           <button
             key={a.id}
-            className={`agent-card is-${a.status.toLowerCase().replace(/s+/g, '-')}${selected ? ' selected' : ''}`}
+            className={`agent-card is-${a.status.toLowerCase().replace(/\s+/g, '-')}${selected ? ' selected' : ''}`}
+            data-status={a.status}
             onClick={() => select(selected ? null : { kind: 'agent', id: a.id })}
             title={fullStory(a)}
           >

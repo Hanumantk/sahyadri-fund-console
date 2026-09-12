@@ -84,7 +84,7 @@ div.home
       span.name
       span.live
         span.st
-    button.agent-card.is-need-.you
+    button.agent-card.is-needs-you
       span.name
       span.live
         span.st

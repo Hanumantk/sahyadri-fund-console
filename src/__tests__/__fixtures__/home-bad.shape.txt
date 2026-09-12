@@ -67,7 +67,7 @@ div.home
           span.k
           span.v
   div.agent-row
-    button.agent-card.is-pau-ed
+    button.agent-card.is-paused
       span.name
       span.live
         span.st
@@ -75,7 +75,7 @@ div.home
       span.name
       span.live
         span.st
-    button.agent-card.is-pau-ed
+    button.agent-card.is-paused
       span.name
       span.live
         span.st
@@ -87,7 +87,7 @@ div.home
       span.name
       span.live
         span.st
-    button.agent-card.is-need-.you
+    button.agent-card.is-needs-you
       span.name
       span.live
         span.st

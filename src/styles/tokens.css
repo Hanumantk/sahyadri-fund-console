@@ -1,196 +1,132 @@
 /* ---------------------------------------------------------------------------
-   Tokens. The screen is a neutral ground — one canvas, one raised surface,
-   four greys of text, three flat greys of fill — carrying one accent and a
-   small set of semantic colours. Nothing is coloured that does not mean
-   something. See the Colour block below for what each hue is for.
+   Product tokens
 
-   Dark is the default, and it follows Claude's: a warm near-black canvas
-   rather than a blue-grey one, a card surface one step up from it, a sidebar
-   one step down, warm off-white text, and hairlines quiet enough to separate
-   without drawing the eye.
-
-   Put data-theme="light" on <html> for the light palette.
+   The interface uses one quiet cool-grey canvas, white working surfaces and a
+   dark navigation anchor. Cobalt identifies interaction and selection. Green,
+   amber and red are reserved for outcomes, attention and breaches, so colour
+   always has a job rather than becoming another layer of decoration.
    --------------------------------------------------------------------------- */
 
-:root {
-  color-scheme: dark;
-
-  --bg: #1a1a18; /* canvas */
-  --surface: #2a2a27; /* cards, dialogs, inputs: a clear step up from the canvas */
-  --sidebar-bg: #141412;
-
-  --ink: #faf9f5; /* primary text, 16.5:1 on the canvas */
-  --text-2: #c9c7bc; /* secondary, 10.3:1 */
-  --text-3: #a3a099; /* tertiary, 6.7:1 */
-  --placeholder: #9d9b95; /* quaternary, 6.3:1 on canvas, 5.2:1 on a card */
-
-  --chip: #3a3935; /* primary chip fill, a step up again so chips read on a card */
-  --chip-soft: #302f2c; /* secondary chip fill */
-  --chip-hover: #474641;
-  /* Rectangles sitting inside a card are recessed, not raised again. */
-  --inset: #141412;
-  --inset-soft: #1f1f1d;
-  --track: #2e2d2a; /* progress track */
-  --fill: #8b8981; /* progress fill */
-  --limit-over: var(--alert);
-  --limit-over-bg: var(--alert-soft);
-  --chart-1: #e7e5dc;
-  --chart-2: #b8b5aa;
-  --chart-3: #8d8a82;
-  --chart-4: #66645f;
-  --chart-5: #474642;
-
-  --line-strong: rgba(255, 255, 255, 0.22); /* card and input outlines */
-  --line: rgba(255, 255, 255, 0.1); /* section rules and hairlines */
-
-  --glass: rgba(48, 48, 45, 0.88); /* the chat: its own shade, lighter than a card */
-  --ink-50: rgba(255, 255, 255, 0.3); /* sidebar-toggle outline */
-  --scrim: rgba(0, 0, 0, 0.72); /* dialog backdrop */
-
-  /* ---- Colour -------------------------------------------------------------
-     The screen stays ~95% neutral. Colour is spent on three things and
-     nothing else: one accent for where a person acts, semantic states, and
-     the data ramp.
-
-     The accent is ink blue, because the premise of this console is a written
-     record: every agent action is "written to the record", and the accent is
-     the pen. It is deliberately in neither the up nor the down family — on a
-     screen showing gains and losses, an accent that leans green or red starts
-     making claims about money it does not mean.
-
-     Money keeps the Indian market convention, green up and red down, and is
-     never colour alone: every figure carries its own + or − sign. */
-  --accent: #7ca9dd; /* 7.7:1 on the canvas */
-  --accent-strong: #9ac0e8; /* hover */
-  --accent-ink: #101620; /* text on an accent fill */
-  --accent-soft: rgba(124, 169, 221, 0.15);
-  --accent-line: rgba(124, 169, 221, 0.42);
-
-  --up: #74be8e; /* a gain, 8.5:1 */
-  --down: #e28b84; /* a loss, 7.4:1 */
-  --warn: #dfb050; /* near a limit, a late feed, an agent not running */
-  --alert: #e79a7a; /* past a limit, or waiting on you */
-  --alert-soft: rgba(231, 154, 122, 0.13);
-  --warn-soft: rgba(223, 176, 80, 0.13);
-
-  --divider: rgba(255, 255, 255, 0.14); /* between the four fields */
-}
-
+:root,
 :root[data-theme='light'] {
   color-scheme: light;
 
-  --bg: #fcfcfb;
-  --surface: #fcfcfb;
-  --sidebar-bg: #fcfcfb;
+  /* Canvas and surfaces */
+  --bg: #f4f7fb;
+  --surface: #ffffff;
+  --surface-muted: #f7f9fc;
+  --surface-subtle: #fafbfd;
+  --control-bg: #ffffff;
+  --table-bg: #ffffff;
+  --sidebar-bg: #0e1a2b;
+  --sidebar-ink: #f7faff;
+  --sidebar-text: #b8c5d6;
+  --sidebar-attention: #ffb3a8;
+  --sidebar-hover: rgba(255, 255, 255, 0.07);
+  --sidebar-line: rgba(255, 255, 255, 0.1);
+  --tooltip-bg: #172438;
+  --tooltip-ink: #eef4fb;
 
-  --ink: #000000;
-  --text-2: #4e4e4e;
-  --text-3: rgba(94, 94, 94, 0.93);
-  /* Raised from the wireframe #9e9e9e, which is 2.6:1 on the page and fails AA. */
-  --placeholder: #6e6e6e;
+  /* Type */
+  --ink: #182230;
+  --text-2: #465568;
+  --text-3: #58687a;
+  --placeholder: #58687a;
 
-  --chip: #dddddd;
-  --chip-soft: #ededed;
-  --chip-hover: #d9d9d9;
-  --inset: #dddddd;
-  --inset-soft: #ededed;
-  --track: #d9d9d9;
-  --fill: #898989;
+  /* Quiet controls and recessed regions */
+  --chip: #e7edf5;
+  --chip-soft: #eef3f8;
+  --chip-hover: #dfe7f1;
+  --inset: #f1f5f9;
+  --inset-soft: #f7f9fc;
+  --track: #e1e7ef;
+  --fill: #315bd6;
+
+  /* Lines and elevation */
+  --line: #dbe3ec;
+  --line-strong: #c6d0dc;
+  --divider: #d7e0ea;
+  --glass: rgba(255, 255, 255, 0.96);
+  --ink-50: rgba(24, 34, 48, 0.36);
+  --scrim: rgba(14, 26, 43, 0.46);
+  --shadow-xs: 0 1px 2px rgba(15, 31, 54, 0.04), 0 4px 14px rgba(15, 31, 54, 0.035);
+  --shadow-sm: 0 8px 24px rgba(15, 31, 54, 0.09);
+  --shadow-md: 0 18px 46px rgba(15, 31, 54, 0.14);
+  --shadow-top: 0 -8px 24px rgba(15, 31, 54, 0.06);
+
+  /* Interaction */
+  --accent: #315bd6;
+  --accent-strong: #2446aa;
+  --accent-ink: #ffffff;
+  --accent-soft: #e9efff;
+  --accent-line: #aebff3;
+  --info: #2563b8;
+  --info-soft: #eaf3ff;
+
+  /* Meaning */
+  --success: #187653;
+  --success-soft: #e6f5ee;
+  --up: #187653;
+  --down: #b42318;
+  --warn: #8a5b00;
+  --warn-soft: #fff4d6;
+  --alert: #b42318;
+  --alert-soft: #fdecea;
   --limit-over: var(--alert);
   --limit-over-bg: var(--alert-soft);
-  --chart-1: #1a1a1a;
-  --chart-2: #4c4c4c;
-  --chart-3: #767676;
-  --chart-4: #a0a0a0;
-  --chart-5: #c1c1c1;
 
-  --line-strong: rgba(0, 0, 0, 0.26);
-  --line: rgba(0, 0, 0, 0.13);
+  /* A coordinated data ramp: categorical enough to scan, calm enough to sit
+     behind labels. Cash and empty capacity continue to use --track. */
+  --chart-1: #2f58c8;
+  --chart-2: #4274c6;
+  --chart-3: #6893cf;
+  --chart-4: #99b4dd;
+  --chart-5: #c7d6ec;
 
-  --glass: rgba(252, 252, 251, 0.82);
-  --ink-50: rgba(0, 0, 0, 0.32);
-  --scrim: rgba(0, 0, 0, 0.35);
-
-  --accent: #1f5b8f; /* 6.6:1 on the page */
-  --accent-strong: #174a76;
-  --accent-ink: #ffffff;
-  --accent-soft: rgba(31, 91, 143, 0.09);
-  --accent-line: rgba(31, 91, 143, 0.35);
-
-  --up: #1a6f3f;
-  --down: #a8291c;
-  --warn: #8a5300;
-  --alert: #8c351f;
-  --alert-soft: rgba(140, 53, 31, 0.08);
-  --warn-soft: rgba(138, 83, 0, 0.09);
-
-  --divider: rgba(0, 0, 0, 0.15);
-}
-
-:root {
-  /* Legacy names. These stay neutral on purpose: they were sprayed across old
-     rules, and pointing them at the real semantic colours would put hue on
-     things that mean nothing. Use --up, --down, --warn and --alert directly. */
+  /* Legacy names kept for older selectors. */
   --page: var(--bg);
-  --surface-2: var(--chip-soft);
+  --surface-2: var(--surface-muted);
   --text: var(--ink);
   --border: var(--line);
   --border-2: var(--line-strong);
-  --red: var(--text-2);
-  --red-bg: var(--chip);
-  --amber: var(--text-2);
-  --amber-bar: var(--fill);
-  --amber-bg: var(--chip);
-  --blue: var(--text-2);
-  --blue-bg: var(--chip-soft);
-  --green: var(--text-2);
-  --green-bg: var(--chip);
+  --red: var(--alert);
+  --red-bg: var(--alert-soft);
+  --amber: var(--warn);
+  --amber-bar: var(--warn);
+  --amber-bg: var(--warn-soft);
+  --blue: var(--info);
+  --blue-bg: var(--info-soft);
+  --green: var(--success);
+  --green-bg: var(--success-soft);
 
   /* Shell */
   --sidebar-w: 240px;
   --sidebar-rail: 84px;
-  --topbar-h: 57px;
+  --topbar-h: 64px;
   --pad: 32px;
   --gutter: 16px;
 
   /* 12-column grid: 11 gutters of 16 removed, the rest split twelve ways. */
   --col: calc((100% - 176px) / 12);
   --pitch: calc(var(--col) + var(--gutter));
-  /* Columns 1-4 of the split, measured to the divider. */
   --split-left: calc(4 * var(--col) + 3 * var(--gutter));
-
-  /* Room between a field's content and the rule beside it. The rule sits
-     centred in the channel this opens up, so the clearance is equal on both
-     sides of it. */
   --block-pad: 24px;
 
   /* Vertical rhythm */
-  --gap-rule-kpi: 72px; /* the top-bar rule to the first numbers */
-  --gap-kpi-agents: 72px;
-  --gap-agents-split: 64px;
+  --gap-rule-kpi: 24px;
+  --gap-kpi-agents: 20px;
+  --gap-agents-split: 20px;
   --footer-h: 0px;
-  --chat-lift: 0px; /* the chat sits on the bottom margin line */
+  --chat-lift: 0px;
 
   /* Shape */
-  --radius: 10px;
-  --radius-sm: 6px;
-  --radius-chip: 6px;
-  --radius-bar: 5px;
-  /* The audit search is the one control shaped as a pill: it is the field you
-     are meant to reach for on that page, so it reads as a search box on sight. */
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-chip: 8px;
+  --radius-bar: 999px;
   --radius-pill: 999px;
 
-  /* Type. 14px is the floor for the whole interface, and the scale above it
-     carries priority: how much a thing matters decides how big it is.
-
-       28  the fund's state            KPI values
-       24  where you are               section headings, page titles
-       20  what needs you              the decision itself
-       18  named subjects              agent names, block labels, consequence numbers
-       16  urgency and emphasis        warnings, deadlines, counts, section titles, nav
-       14  body and metadata           everything else
-
-     Weight and grey level separate tiers inside each size. */
+  /* Type hierarchy. 14px is the floor throughout the application. */
   --fs-body: 14px;
   --fs-em: 16px;
   --fs-title: 18px;
@@ -198,7 +134,6 @@
   --fs-head: 24px;
   --fs-hero: 28px;
 
-  /* Legacy step names, all body size. */
   --fs-8: var(--fs-body);
   --fs-10: var(--fs-body);
   --fs-11: var(--fs-body);

@@ -30,8 +30,10 @@ const VIEWS = [
   ['late feed', 'http://localhost:5173/?state=bad', (p) => p.click('.dcard >> nth=3')],
   ['agent view', 'http://localhost:5173/?state=normal', (p) => p.click('.agent-card >> nth=4')],
   ['pause dialog', 'http://localhost:5173/?state=normal', (p) => p.click('.pause-slot .btn')],
+  ['portfolio', 'http://localhost:5173/portfolio?state=bad', null],
+  ['rules', 'http://localhost:5173/rules?state=bad', null],
   ['audit trail', 'http://localhost:5173/audit?record=DEC-0911-01', null],
-  ['stub page', 'http://localhost:5173/rules', null],
+  ['settings', 'http://localhost:5173/settings', null],
 ];
 
 const collect = () => {

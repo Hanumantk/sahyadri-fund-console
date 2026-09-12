@@ -5,20 +5,20 @@ import type { IconName } from './Icon';
 
 export type Tone = 'grey' | 'outline' | 'amber' | 'red' | 'blue' | 'green';
 
-/** Plain text. The wireframe carries no pills, so tone and icon are ignored. */
-export function Badge({ children }: { tone?: Tone; icon?: IconName; children: ReactNode }) {
-  return <span className="badge">{children}</span>;
+/** Compact status text. Tone is exposed to CSS so colour can reinforce meaning. */
+export function Badge({ tone = 'grey', children }: { tone?: Tone; icon?: IconName; children: ReactNode }) {
+  return <span className="badge" data-tone={tone}>{children}</span>;
 }
 
-export function Chip({ children }: { tone?: Tone; icon?: IconName; children: ReactNode }) {
-  return <span className="chip">{children}</span>;
+export function Chip({ tone = 'grey', children }: { tone?: Tone; icon?: IconName; children: ReactNode }) {
+  return <span className="chip" data-tone={tone}>{children}</span>;
 }
 
 /** Status, as plain text. */
 export function StatusBadge({ status }: { status: AgentStatus }) {
   // Running is the ordinary case and carries no colour.
-  const slug = status.toLowerCase().replace(/s+/g, '-');
-  return <span className={`badge is-${slug}`}>{status}</span>;
+  const slug = status.toLowerCase().replace(/\s+/g, '-');
+  return <span className={`badge is-${slug}`} data-status={status}>{status}</span>;
 }
 
 /** One track, one fill. Level is the only thing a bar says here. */
