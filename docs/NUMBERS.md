@@ -178,6 +178,23 @@ it has waited.
 - **Permission is checked against the Book**, never inferred from a button.
 - **Loosening expires; tightening does not.**
 
+### Something else: your own instruction
+
+Every item in the Decisions column has a blank box beside its listed options for
+anything they do not cover. **Words are recorded and passed on, never executed.**
+Nothing is bought and the books do not change on a written instruction; the
+instruction is quoted word for word in the record and goes to the agent that
+raised the item, which writes down that it has it.
+
+| Item | What the instruction does |
+| --- | --- |
+| Proposal, verdict | Closes it: "Your instruction · nothing bought". Anything that needs money comes back as a new proposal. |
+| Mismatch | Closes it in your queue; the books are unchanged and Operations must still settle it before the value is struck. |
+| Late feed, broken limit | Stays open, because words cannot make a feed arrive or a limit unbreak. Every instruction sent is listed on the item. |
+
+`src/data/__tests__/instruction.test.ts` holds that no instruction, on any item
+in any state, moves cash, shares, the fund value or the order count.
+
 ### Counting
 
 An order can now be placed three ways, and the pipeline line says so once the

@@ -20,7 +20,9 @@ import { ms } from '../data/clock';
 export type ProposalChoice = 'take' | 'less' | 'decline';
 export type VerdictChoice = 'bull' | 'halfway' | 'bear' | 'lapse';
 export type BreakChoice = 'accept' | 'keep' | 'assign';
-export type Choice = ProposalChoice | VerdictChoice | BreakChoice;
+/** The person's own written instruction, when none of the listed options fits. */
+export type OwnChoice = 'own';
+export type Choice = ProposalChoice | VerdictChoice | BreakChoice | OwnChoice;
 
 function iso(t: number): string {
   // Produce an ISO string with the IST offset so the log reads consistently.
@@ -53,6 +55,8 @@ const NEEDS_REASON: Record<Choice, boolean> = {
   accept: true,
   keep: true,
   assign: true,
+  // The instruction is the reason; it cannot be empty.
+  own: true,
 };
 
 export function choiceNeedsReason(choice: Choice): boolean {
@@ -64,6 +68,10 @@ export function applyDecision(rt: Runtime, id: string, choice: Choice, amountIn:
   if (!d) throw new Error(`Unknown decision ${id}`);
   if (rt.outcomes[id]) throw new Error(`${id} is already closed`);
   const cleanReason = reason.trim();
+  if (choice === 'own') {
+    if (!cleanReason) throw new Error('Write the instruction. It goes into the record word for word.');
+    return applyOwnDecision(rt, d, cleanReason);
+  }
   if (NEEDS_REASON[choice] && !cleanReason) throw new Error('Add a one-line reason. It goes into the record.');
   const user = PEOPLE[CURRENT_USER].name;
   const events: RawEvent[] = [];
@@ -184,6 +192,81 @@ export function applyDecision(rt: Runtime, id: string, choice: Choice, amountIn:
     );
   }
   return { ...next, extraEvents: [...rt.extraEvents, ...events] };
+}
+
+/**
+ * Close a decision with the person's own words instead of a listed option.
+ *
+ * Words cannot be executed, so they are not: nothing is bought and the books do
+ * not change. The instruction is recorded verbatim, the agent that raised the
+ * item writes down that it has it, and anything that needs money has to come
+ * back as something the person can approve.
+ */
+function applyOwnDecision(rt: Runtime, d: ReturnType<typeof resolvedDecisionsFor>[number], text: string): Runtime {
+  const to = d.kind === 'break' ? d.raisedBy : d.proposedBy;
+  const user = PEOPLE[CURRENT_USER].name;
+  const events: RawEvent[] = [
+    mk(rt, 0, {
+      actor: CURRENT_USER,
+      type: 'human_decision',
+      company: d.company,
+      amount: 0,
+      text: `Your own instruction instead of the options · ${d.kind === 'break' ? 'books unchanged' : 'nothing bought'} · "${text}"`,
+      related: [d.id],
+    }),
+    mk(rt, 1, {
+      actor: to,
+      type: 'instruction_received',
+      company: d.company,
+      text: `Instruction from ${user} on ${d.id} recorded · "${text}" · ${d.kind === 'break' ? 'the mismatch still has to be settled before the official value is struck' : 'anything that needs money comes back as a new proposal'}`,
+      related: [d.id],
+    }),
+  ];
+  const overrides = { ...rt.agentOverrides };
+  if (d.kind === 'verdict') {
+    overrides.portfolio = { status: 'Running', liveLine: `Back to sizing · ${d.company} verdict settled by ${user}'s own instruction` };
+    events.push(mk(rt, 2, { actor: 'portfolio', type: 'status_change', company: d.company, text: `Status → Running · ${d.company} verdict settled by instruction`, related: [d.id] }));
+  }
+  return {
+    ...rt,
+    outcomes: { ...rt.outcomes, [d.id]: { status: 'instructed', at: rt.nowMs, by: CURRENT_USER, amount: 0, reason: text } },
+    instructions: { ...rt.instructions, [d.id]: [...(rt.instructions[d.id] ?? []), { atMs: rt.nowMs, text }] },
+    agentOverrides: overrides,
+    extraEvents: [...rt.extraEvents, ...events],
+  };
+}
+
+/**
+ * Send your own instruction on an item that words cannot settle — a late feed,
+ * a broken limit. It is recorded and passed on; the item stays open, because
+ * the fact behind it has not changed.
+ */
+export function applyInstruction(rt: Runtime, itemId: string, text: string): Runtime {
+  const words = text.trim();
+  if (!words) throw new Error('Write the instruction. It goes into the record word for word.');
+  const item = derive(rt).open.find((i) => i.id === itemId);
+  if (!item) throw new Error(`${itemId} is not open`);
+  const events: RawEvent[] = [
+    mk(rt, 0, {
+      actor: CURRENT_USER,
+      type: 'instruction_sent',
+      company: item.company,
+      text: `Instruction to ${AGENTS[item.instructTo].name} on ${item.title} · "${words}"`,
+      related: [itemId],
+    }),
+    mk(rt, 1, {
+      actor: item.instructTo,
+      type: 'instruction_received',
+      company: item.company,
+      text: `Instruction from ${PEOPLE[CURRENT_USER].name} recorded · "${words}" · the item stays open until the condition behind it clears`,
+      related: [itemId],
+    }),
+  ];
+  return {
+    ...rt,
+    instructions: { ...rt.instructions, [itemId]: [...(rt.instructions[itemId] ?? []), { atMs: rt.nowMs, text: words }] },
+    extraEvents: [...rt.extraEvents, ...events],
+  };
 }
 
 function buy(rt: Runtime, ticker: string, company: string, amount: number, price: number, decisionId: string, events: RawEvent[], onOverride = false): Runtime {

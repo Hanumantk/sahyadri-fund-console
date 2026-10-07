@@ -5,7 +5,7 @@ import type { AgentId } from '../../data/scenario';
 import { useStore } from '../../state/store';
 import { Badge, RecordLink, Section } from '../ui/bits';
 import { Icon } from '../ui/Icon';
-import { ExceptionInForce, OverrideForm, ReasonAction } from './OverrideControls';
+import { ExceptionInForce, OverrideForm, OwnInstructionBox, ReasonAction } from './OverrideControls';
 
 /** Late feed or broken limit: a fixed layout with the facts and the record, no decision buttons. */
 export function AttentionView({ item }: { item: QueueItem }) {
@@ -56,6 +56,7 @@ export function AttentionView({ item }: { item: QueueItem }) {
           </Section>
         </div>
         <ResumeHalted ids={feed.dependents.filter((a) => vm.agents[a].haltedByAgent)} />
+        <OwnInstructionBox item={item} />
         <Section title="Numbers built on this feed">
           <div className="card" style={{ fontSize: 'var(--fs-12)', color: 'var(--text-2)' }}>
             Fund value {fmtCr(vm.fund.fundValue)}, value per unit, drawdown {fmtPct(vm.fund.drawdownPct)} and every limit are shown grey with their measured time ({fmtTime(vm.fund.measuredAtMs)}). Cash and order counts come from the orders feed, which is live.
@@ -154,6 +155,7 @@ export function AttentionView({ item }: { item: QueueItem }) {
           </>
         )
       )}
+      {item.status === 'open' && <OwnInstructionBox item={item} />}
       {members.length > 0 && (
         <Section title="Holdings in this sector">
           <div className="card">

@@ -8,6 +8,7 @@ import {
   applyBudget,
   applyDecision,
   applyExpiry,
+  applyInstruction,
   applyCapOverride,
   applyChase,
   applyEscalate,
@@ -60,7 +61,8 @@ type Action =
   | { type: 'restoreSpeed'; id: AgentId }
   | { type: 'escalate'; subjectKey: string }
   | { type: 'chase'; escalationId: string }
-  | { type: 'withdrawEscalation'; escalationId: string; reason: string };
+  | { type: 'withdrawEscalation'; escalationId: string; reason: string }
+  | { type: 'instruct'; itemId: string; text: string };
 
 function reducer(s: State, a: Action): State {
   switch (a.type) {
@@ -108,6 +110,8 @@ function reducer(s: State, a: Action): State {
       return { ...s, rt: applyChase(s.rt, a.escalationId) };
     case 'withdrawEscalation':
       return { ...s, rt: applyWithdrawEscalation(s.rt, a.escalationId, a.reason) };
+    case 'instruct':
+      return { ...s, rt: applyInstruction(s.rt, a.itemId, a.text) };
   }
 }
 
@@ -134,6 +138,7 @@ interface Store {
   escalate: (subjectKey: string) => void;
   chase: (escalationId: string) => void;
   withdrawEscalation: (escalationId: string, reason: string) => void;
+  instruct: (itemId: string, text: string) => void;
   setState: (state: StateName) => void;
 }
 
@@ -191,6 +196,7 @@ export function StoreProvider({ children, state }: { children: ReactNode; state:
       escalate: (subjectKey) => dispatch({ type: 'escalate', subjectKey }),
       chase: (escalationId) => dispatch({ type: 'chase', escalationId }),
       withdrawEscalation: (escalationId, reason) => dispatch({ type: 'withdrawEscalation', escalationId, reason }),
+      instruct: (itemId, text) => dispatch({ type: 'instruct', itemId, text }),
       setState: (next) => {
         const url = new URL(window.location.href);
         url.searchParams.set('state', next);

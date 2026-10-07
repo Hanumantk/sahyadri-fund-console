@@ -5776,3 +5776,45 @@ table.audit tr.hit td {
   line-height: 1.5;
   color: var(--alert);
 }
+
+/* The blank box beside a decision's listed options. It reads as one more
+   choice, so it takes the button row's edge and the same selected ring. */
+.own-action {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.own-label {
+  font-size: var(--fs-12);
+  font-weight: 600;
+  color: var(--text-2);
+}
+.own-action textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: var(--fs-em);
+  line-height: 1.4;
+  resize: vertical;
+}
+.own-action textarea::placeholder {
+  color: var(--placeholder);
+}
+.own-action textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px var(--ink);
+}
+.own-action.selected textarea {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.own-action + .done-note {
+  margin-top: 10px;
+}
+.own-sent {
+  margin-top: 10px;
+  font-size: var(--fs-12);
+}

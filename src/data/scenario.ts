@@ -1148,6 +1148,10 @@ export type EventType =
   | 'escalated'
   | 'escalation_chased'
   | 'escalation_withdrawn'
+  // A person's own instruction, in their words, when none of the listed options
+  // fits; and the agent's note that it has it. Neither moves money.
+  | 'instruction_sent'
+  | 'instruction_received'
   | 'chat';
 
 export interface RawEvent {

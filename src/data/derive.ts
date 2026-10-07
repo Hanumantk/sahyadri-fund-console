@@ -69,7 +69,9 @@ export type DecisionStatus =
   // Proposal taken at the size the Portfolio Agent had before it applied a cap.
   | 'taken_over_cap'
   // A broken limit a person chose to hold until the close, with a co-signer.
-  | 'on_exception';
+  | 'on_exception'
+  // Settled with the person's own written instruction instead of a listed option.
+  | 'instructed';
 
 export interface DecisionOutcome {
   status: DecisionStatus;
@@ -141,6 +143,14 @@ export interface Runtime {
   reinstated: Record<string, { atMs: number; reason: string }>;
   /** Decisions a person reopened after they expired, by the new deadline. */
   extendedUntil: Record<string, number>;
+  /** A person's own written instructions on an item, when no listed option fit. */
+  instructions: Record<string, OwnInstruction[]>;
+}
+
+/** An instruction in a person's own words. It moves no money by itself. */
+export interface OwnInstruction {
+  atMs: number;
+  text: string;
 }
 
 /**
@@ -179,6 +189,7 @@ export function initialRuntime(state: StateName, nowMs: number): Runtime {
     escalations: [],
     reinstated: {},
     extendedUntil: {},
+    instructions: {},
   };
 }
 
@@ -1191,6 +1202,33 @@ export interface QueueItem {
   capOverride?: CapOverride | null;
   /** How to reopen it, when it expired before anyone decided. */
   reopen?: ReopenOption | null;
+  /** Who a written instruction goes to: the agent that raised the item. */
+  instructTo: AgentId;
+  /** What a written instruction does and does not do, for this kind of item. */
+  ownNote: string;
+  /** Instructions already sent on it, oldest first. */
+  instructions: OwnInstruction[];
+}
+
+/**
+ * What writing your own instruction does, by the kind of item. The rule is the
+ * same for all of them: words are recorded and passed on, and nothing that needs
+ * money happens until it comes back as something you can approve.
+ */
+function ownNoteFor(kind: QueueItem['kind'], to: AgentId): string {
+  const a = AGENTS[to].name;
+  switch (kind) {
+    case 'proposal':
+      return `Nothing is bought on a written instruction. It closes this proposal and goes to the ${a}, which brings back anything that needs money as a new proposal.`;
+    case 'verdict':
+      return `Nothing is bought on a written instruction. It closes this verdict and goes to the ${a}, which brings back anything that needs money as a new proposal. The Portfolio Agent goes back to Running.`;
+    case 'break':
+      return `The books do not change. It closes this mismatch in your queue and goes to the ${a}, which must still settle it before the official value is struck.`;
+    case 'feed':
+      return `It goes to the ${a} and stays on this item. The feed is late until it recovers, so the item stays open.`;
+    case 'limit':
+      return `It goes to the ${a} and stays on this item. A written instruction cannot trim, so the limit stays broken until one of the controls above settles it.`;
+  }
 }
 
 function pctOfFund(f: FundFigures, rupees: number): number {
@@ -1287,6 +1325,8 @@ function closedLabel(d: Decision, o: DecisionOutcome): string {
       return 'Kept our record · chasing the broker';
     case 'assigned':
       return 'Assigned to Operations staff';
+    case 'instructed':
+      return d.kind === 'break' ? `Your instruction · sent to ${AGENTS[d.raisedBy].name}` : 'Your instruction · nothing bought';
     case 'taken_over_cap':
       return `Overrode the cap · ${fmtCr(o.amount ?? 0)} · buying`;
     default:
@@ -1379,6 +1419,9 @@ export function deriveQueue(
       previews,
       raisedBy,
       capOverride: d.kind === 'proposal' && status === 'open' ? capOverrideFor(rt, f, d, events, inFlight) : null,
+      instructTo: d.kind === 'break' ? d.raisedBy : d.proposedBy,
+      ownNote: ownNoteFor(d.kind, d.kind === 'break' ? d.raisedBy : d.proposedBy),
+      instructions: rt.instructions[d.id] ?? [],
       // Only an expiry can be reopened. A decision someone made is theirs to
       // live with; it is not an agent's to overrule.
       reopen: d.kind !== 'break' && status === 'expired' ? reopenFor(rt, d.id, events) : null,
@@ -1402,6 +1445,9 @@ export function deriveQueue(
       status: 'open',
       previews: [],
       raisedBy: 'Monitoring Agent',
+      instructTo: 'monitoring',
+      ownNote: ownNoteFor('feed', 'monitoring'),
+      instructions: rt.instructions[`FEED-${feed.id.toUpperCase()}`] ?? [],
     });
   }
   for (const row of limits.broken) {
@@ -1425,6 +1471,9 @@ export function deriveQueue(
       closedLabel: ex ? `On exception until ${fmtTime(ex.lapsesAtMs)} · ${ex.id}` : undefined,
       previews: [],
       raisedBy: 'Risk Agent',
+      instructTo: 'risk',
+      ownNote: ownNoteFor('limit', 'risk'),
+      instructions: rt.instructions[limitItemId(row.key)] ?? [],
     });
   }
 

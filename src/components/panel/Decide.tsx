@@ -27,8 +27,11 @@ export function Decide({
   slider?: { min: number; max: number; step: number; initial: number };
   previewFor?: (amount: number) => Preview;
 }) {
-  const { decide, reopen } = useStore();
+  const { vm, decide, reopen } = useStore();
   const [choice, setChoice] = useState<Choice | null>(null);
+  /** The person's own instruction, kept while they look at the listed options. */
+  const [own, setOwn] = useState('');
+  const isOwn = choice === 'own';
   const [amount, setAmount] = useState(slider?.initial ?? 0);
   const [reason, setReason] = useState('');
   const [err, setErr] = useState('');
@@ -38,6 +41,8 @@ export function Decide({
   const confirmRef = useRef<HTMLDivElement>(null);
 
   // Bring the preview, reason and Confirm into view once an option is picked.
+  // Typing an instruction picks it too, but it should not jump the page while
+  // the person is still writing, so that only scrolls when it is first chosen.
   useEffect(() => {
     if (choice) confirmRef.current?.scrollIntoView({ block: 'nearest' });
   }, [choice]);
@@ -92,6 +97,43 @@ export function Decide({
           </button>
         ))}
       </div>
+
+      {/* A blank box beside the listed options, for anything they do not cover.
+          Writing in it chooses it; the instruction is recorded word for word and
+          goes to the agent that raised this item. */}
+      <label className={`own-action${isOwn ? ' selected' : ''}`}>
+        <span className="own-label">Something else</span>
+        <textarea
+          rows={2}
+          placeholder={`Write your own instruction to the ${agentName(vm, item.instructTo)}, if none of the options above is right`}
+          value={own}
+          onFocus={() => {
+            if (own.trim()) setChoice('own');
+          }}
+          onChange={(e) => {
+            setOwn(e.target.value);
+            setErr('');
+            if (e.target.value.trim()) setChoice('own');
+            else if (isOwn) setChoice(null);
+          }}
+        />
+      </label>
+
+      {isOwn && (
+        <>
+          <div className="done-note">{item.ownNote}</div>
+          {err && <div className="err">{err}</div>}
+          <div className="confirm-row" ref={confirmRef}>
+            <button className="btn primary" onClick={confirm}>
+              <Icon name="send" />
+              Send your instruction
+            </button>
+            <span className="muted" style={{ fontSize: 'var(--fs-12)' }}>
+              Written to the Audit trail as {item.id} · by {vm.user.name}
+            </span>
+          </div>
+        </>
+      )}
 
       {opt && slider && opt.key === 'less' && (
         <div className="slider-row">
@@ -158,6 +200,18 @@ export function Decide({
   );
 
   function confirm() {
+    if (isOwn) {
+      if (!own.trim()) {
+        setErr('Write the instruction. It goes into the record word for word.');
+        return;
+      }
+      try {
+        decide(item.id, 'own', 0, own);
+      } catch (e) {
+        setErr((e as Error).message);
+      }
+      return;
+    }
     if (!opt) return;
     if (opt.needsReason && !reason.trim()) {
       setErr('Add a one-line reason. It goes into the record.');
@@ -169,4 +223,9 @@ export function Decide({
       setErr((e as Error).message);
     }
   }
+}
+
+/** The display name of the agent an instruction goes to. */
+function agentName(vm: ReturnType<typeof useStore>['vm'], id: QueueItem['instructTo']): string {
+  return vm.agents[id].name;
 }

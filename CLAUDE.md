@@ -56,6 +56,10 @@ Four rules hold, and `src/data/__tests__/override.test.ts` fails if one stops:
   is named on screen and needs the Risk Manager.
 - **Loosening expires, tightening does not.**
 
+Every decision also has a blank "Something else" box for the person's own
+instruction. Words are recorded and sent to the agent, never executed: no
+instruction moves money or changes the books (`instruction.test.ts`).
+
 `docs/NUMBERS.md` §3a is the reference.
 
 ## The clock
@@ -74,7 +78,7 @@ filter. The invariants run each state at NOW, NOW+5 and NOW+15.
 ## Before finishing any change
 
 ```bash
-npm test        # 636 invariants, the two guard tests, and the design freeze
+npm test        # 672 invariants, the two guard tests, and the design freeze
 npm run build   # tsc --noEmit, then vite build
 ```
 

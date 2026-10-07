@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { Authority, GrantedException } from '../../data/derive';
+import type { Authority, GrantedException, QueueItem } from '../../data/derive';
 import { fmtTime } from '../../data/format';
 import { COSIGNERS } from '../../data/rulebook';
 import { useStore } from '../../state/store';
@@ -274,5 +274,65 @@ export function ReasonAction({
       {err && <div className="err">{err}</div>}
       {note && <div className="faint override-note">{note}</div>}
     </>
+  );
+}
+
+/**
+ * The blank box for an item words cannot settle, such as a late feed or a broken
+ * limit. The instruction is recorded and sent; the item stays open, and what was
+ * sent stays listed on it so the next look shows what you already asked for.
+ */
+export function OwnInstructionBox({ item }: { item: QueueItem }) {
+  const { vm, instruct } = useStore();
+  const [text, setText] = useState('');
+  const [err, setErr] = useState('');
+  const send = () => {
+    if (!text.trim()) return setErr('Write the instruction. It goes into the record word for word.');
+    try {
+      instruct(item.id, text);
+      setText('');
+      setErr('');
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+  return (
+    <div className="decide override-form">
+      <label className={`own-action${text.trim() ? ' selected' : ''}`}>
+        <span className="own-label">Something else</span>
+        <textarea
+          rows={2}
+          placeholder={`Write your own instruction to the ${vm.agents[item.instructTo].name}, if none of the controls above is right`}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            setErr('');
+          }}
+        />
+      </label>
+      {text.trim() && <div className="done-note">{item.ownNote}</div>}
+      {err && <div className="err">{err}</div>}
+      {text.trim() && (
+        <div className="confirm-row">
+          <button className="btn primary" onClick={send}>
+            <Icon name="send" />
+            Send your instruction
+          </button>
+          <span className="muted" style={{ fontSize: 'var(--fs-12)' }}>
+            Written to the Audit trail · by {vm.user.name}
+          </span>
+        </div>
+      )}
+      {item.instructions.length > 0 && (
+        <div className="list own-sent">
+          {item.instructions.map((x) => (
+            <div className="list-row" key={x.atMs}>
+              <span className="l">“{x.text}”</span>
+              <span className="r">sent {fmtTime(x.atMs)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
