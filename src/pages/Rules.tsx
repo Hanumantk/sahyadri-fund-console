@@ -28,6 +28,9 @@ import {
   type Limit,
   type ProhibitedEntry,
 } from '../data/rulebook';
+import { actorName } from '../data/derive';
+import { fmtTime, plural } from '../data/format';
+import { PEOPLE } from '../data/scenario';
 import { useRulebook } from '../state/rulebook';
 import { useStore } from '../state/store';
 
@@ -60,9 +63,12 @@ export function Rules() {
   const lastChanged = rulebook.version === RULEBOOK_INITIAL_VERSION
     ? RULEBOOK_LAST_CHANGED
     : `Last changed ${latest.date} by ${latest.actor} · ${latest.rule}`;
-  const exceptionSummary = rulebook.exceptions.length === 1
+  // Overrides granted this session are active exceptions too, so the count at
+  // the top of the page has to include them or it contradicts the list below it.
+  const activeExceptions = rulebook.exceptions.length + vm.exceptions.length;
+  const exceptionSummary = vm.exceptions.length === 0 && rulebook.exceptions.length === 1
     ? RULEBOOK_EXCEPTION_SUMMARY
-    : `${rulebook.exceptions.length} active exceptions`;
+    : `${activeExceptions} active ${plural(activeExceptions, 'exception')}`;
 
   return (
     <div className="page rules-page">
@@ -150,6 +156,29 @@ export function Rules() {
 
         <section className="rule-section">
           <SectionHeading number="07" title="Active exceptions" detail="Every expiry has a defined consequence" />
+          {/* Overrides granted today sit at the top of this ledger, because an
+              override is an exception with an expiry and nothing else. They lapse
+              at the close, so they are listed by the time they run out rather
+              than by a count of days. */}
+          {vm.exceptions.map((exception) => (
+            <article className="exception-card" key={exception.id}>
+              <div className="exception-main">
+                <span className="rule-eyebrow">lapses {fmtTime(exception.lapsesAtMs)}</span>
+                <h3>
+                  {exception.company} · {actorName(exception.agent)}'s block suspended for one trade
+                </h3>
+                <p>
+                  Granted by {PEOPLE[exception.grantedBy].name} · {fmtTime(exception.grantedAtMs)}
+                  {exception.cosigner ? ` · co-signed by ${exception.cosigner}` : ''} · {exception.id}
+                </p>
+                <blockquote>Reason: “{exception.reason}”</blockquote>
+              </div>
+              <div className="exception-expiry">
+                <span>At expiry</span>
+                <strong>{expiryActionLabel(exception.atExpiry)}</strong>
+              </div>
+            </article>
+          ))}
           {rulebook.exceptions.length ? rulebook.exceptions.map((exception) => (
             <article className="exception-card" key={exception.id}>
               <div className="exception-main">
@@ -164,7 +193,7 @@ export function Rules() {
                 <div><button className="btn small" onClick={() => setEditingException({ exception, mode: 'change' })}>Change</button><button className="btn small" onClick={() => setEditingException({ exception, mode: 'end' })}>End now</button></div>
               </div>
             </article>
-          )) : <p className="empty-rule-state">No active exceptions.</p>}
+          )) : vm.exceptions.length === 0 ? <p className="empty-rule-state">No active exceptions.</p> : null}
         </section>
 
         <section className="rule-section">

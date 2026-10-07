@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { actorKind, actorName } from '../data/derive';
 import { fmtDateTimeSec } from '../data/format';
 import { AGENTS, type AgentId, type RawEvent } from '../data/scenario';
@@ -8,7 +8,8 @@ import { Badge } from '../components/ui/bits';
 import { Icon } from '../components/ui/Icon';
 
 export function AuditTrail() {
-  const { vm } = useStore();
+  const { vm, select } = useStore();
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const record = params.get('record') ?? '';
   const agent = params.get('agent') ?? '';
@@ -91,7 +92,27 @@ export function AuditTrail() {
                 </td>
                 <td className="type">{e.type.replace(/_/g, ' ')}</td>
                 <td className="co">{e.company ?? '—'}</td>
-                <td className="what">{e.text}</td>
+                <td className="what">
+                  {e.text}
+                  {/* A record you can still do something about carries the way to
+                      do it. The log is where people find things after the fact;
+                      it should not be a dead end. */}
+                  {vm.actOn[e.id] && (
+                    <>
+                      {' · '}
+                      <button
+                        className="act-link"
+                        onClick={() => {
+                          const target = vm.actOn[e.id].selection;
+                          if (target) select(target);
+                          navigate({ pathname: '/', search: vm.state === 'normal' ? '' : `?state=${vm.state}` });
+                        }}
+                      >
+                        {vm.actOn[e.id].label}
+                      </button>
+                    </>
+                  )}
+                </td>
                 <td className="rel">
                   {(e.related ?? []).map((r) => (
                     <span key={r}>

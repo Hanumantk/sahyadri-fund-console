@@ -9,6 +9,7 @@ import { StatePill } from './StatePill';
 export function HoldingDetailPanel({ holding, onClose }: { holding: Holding; onClose: () => void }) {
   const { vm, select } = useStore();
   const mismatch = holding.states.find((state) => state.kind === 'records_disagree');
+  const acts = vm.actOnTicker[holding.ticker] ?? [];
   const days = holding.exit.days < 1 ? 'under 1 day' : `${holding.exit.days} ${holding.exit.days === 1 ? 'day' : 'days'}`;
 
   return (
@@ -29,6 +30,31 @@ export function HoldingDetailPanel({ holding, onClose }: { holding: Holding; onC
         </div>
       )}
       <div className="panel-body">
+        {/* Everything still open about this holding on Home — a block to
+            overrule, an order to stop, a cap or a breach — one click from the
+            holding, so the Portfolio page is not a place where you can see a
+            problem and have no way to act on it. */}
+        {acts.length > 0 && (
+          <Section title="What you can still do">
+            <div className="card">
+              <div className="list">
+                {acts.map((a) => (
+                  <div className="list-row" key={a.label}>
+                    <span className="l">{a.label}</span>
+                    <span className="r">
+                      <Link
+                        to={{ pathname: '/', search: vm.state === 'normal' ? '' : `?state=${vm.state}` }}
+                        onClick={() => a.selection && select(a.selection)}
+                      >
+                        Open on Home
+                      </Link>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Section>
+        )}
         <Section title="Position">
           <div className="card">
             <div className="list">

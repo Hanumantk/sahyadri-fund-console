@@ -37,6 +37,27 @@ in. Never type a rupee figure or a share count into an authored sentence — the
 Book test fails on it. Event IDs in the Book are authoring keys; the screen shows
 IDs renumbered per state, so link to a record with `recordId(vm, key)`.
 
+## Overrides
+
+A person can overrule an agent wherever an agent decides: blocks, broken limits,
+size caps, dropped ideas, halts and expired decisions, plus stopping, trimming
+and pausing, which are restraint. Each control is on the panel for the thing,
+and reachable from its Audit trail row and its Portfolio holding.
+
+Four rules hold, and `src/data/__tests__/override.test.ts` fails if one stops:
+
+- **Nothing an agent did is deleted.** An override adds a record on top. Agent
+  acknowledgements use `override_acknowledged` so no agent count moves.
+- **Permission comes from the Book, not the button.** `OVERRIDE_POLICY` and
+  `AUTHORITY` decide what is offered, and the Rules page is generated from the
+  same table. The person at this console cannot lift a Compliance block; the
+  console sends it to the person who may and tracks it until answered.
+- **An override must not quietly break a second limit.** Anything else it breaks
+  is named on screen and needs the Risk Manager.
+- **Loosening expires, tightening does not.**
+
+`docs/NUMBERS.md` §3a is the reference.
+
 ## The clock
 
 The demo clock starts at Fri 11 Sep 2026 10:05:00 IST and runs in real time. Do
@@ -53,7 +74,7 @@ filter. The invariants run each state at NOW, NOW+5 and NOW+15.
 ## Before finishing any change
 
 ```bash
-npm test        # 515 invariants, the two guard tests, and the design freeze
+npm test        # 636 invariants, the two guard tests, and the design freeze
 npm run build   # tsc --noEmit, then vite build
 ```
 

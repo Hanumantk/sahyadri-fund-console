@@ -29,6 +29,12 @@ const VIEWS = [
   ['mismatch', 'http://localhost:5173/?state=normal', (p) => p.click('.dcard >> nth=2'), true],
   ['late feed', 'http://localhost:5173/?state=bad', (p) => p.click('.dcard >> nth=3'), true],
   ['agent view', 'http://localhost:5173/?state=normal', (p) => p.click('.agent-card >> nth=4'), true],
+  // The two answers an override can give. The refused one has no button to
+  // press, so everything it says is carried by text.
+  ['override offered', 'http://localhost:5173/?state=normal', (p) => p.click('.closed-item >> nth=0'), true],
+  ['override refused', 'http://localhost:5173/?state=normal', (p) => p.click('.closed-item >> nth=1'), true],
+  ['limit override', 'http://localhost:5173/?state=bad', (p) => p.click('.dcard:has-text("above its")'), true],
+  ['dropped ideas', 'http://localhost:5173/?state=normal', (p) => p.click('.agent-card >> nth=0'), true],
   ['pause dialog', 'http://localhost:5173/?state=normal', (p) => p.click('.pause-slot .btn'), true],
   ['portfolio', 'http://localhost:5173/portfolio?state=bad', null, true],
   ['rules', 'http://localhost:5173/rules?state=bad', null, true],

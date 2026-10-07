@@ -27,6 +27,7 @@ div.page
         td.type
         td.co
         td.what
+          button.act-link
         td.rel
       tr
         td.t
@@ -38,19 +39,7 @@ div.page
         td.type
         td.co
         td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
+          button.act-link
         td.rel
           span
             a
@@ -64,30 +53,7 @@ div.page
         td.type
         td.co
         td.what
-        td.rel
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
+          button.act-link
         td.rel
           span
             a
@@ -125,6 +91,46 @@ div.page
         td.type
         td.co
         td.what
+          button.act-link
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+          button.act-link
+        td.rel
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+          button.act-link
         td.rel
           span
             a
@@ -166,6 +172,7 @@ div.page
         td.type
         td.co
         td.what
+          button.act-link
         td.rel
           span
             a
@@ -250,6 +257,7 @@ div.page
         td.type
         td.co
         td.what
+          button.act-link
         td.rel
       tr
         td.t
@@ -274,6 +282,7 @@ div.page
         td.type
         td.co
         td.what
+          button.act-link
         td.rel
           span
             a
@@ -287,106 +296,7 @@ div.page
         td.type
         td.co
         td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
+          button.act-link
         td.rel
           span
             a
@@ -448,7 +358,172 @@ div.page
         td.type
         td.co
         td.what
+          button.act-link
         td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+          button.act-link
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+          button.act-link
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+          button.act-link
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+          button.act-link
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+          span
+            a
+          span
+            a
+          span
+            a
+          span
+            a
           span
             a
       tr
@@ -487,6 +562,7 @@ div.page
         td.type
         td.co
         td.what
+          button.act-link
         td.rel
           span
             a
@@ -500,92 +576,7 @@ div.page
         td.type
         td.co
         td.what
-        td.rel
-          span
-            a
-          span
-            a
-          span
-            a
-          span
-            a
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
-        td.rel
-          span
-            a
-      tr
-        td.t
-          span.when
-          br
-        td
-          span.actor-tag
-            span.ai
-        td.type
-        td.co
-        td.what
+          button.act-link
         td.rel
           span
             a
@@ -651,6 +642,33 @@ div.page
         td.type
         td.co
         td.what
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+        td.rel
+          span
+            a
+      tr
+        td.t
+          span.when
+          br
+        td
+          span.actor-tag
+            span.ai
+        td.type
+        td.co
+        td.what
+          button.act-link
         td.rel
           span
             a

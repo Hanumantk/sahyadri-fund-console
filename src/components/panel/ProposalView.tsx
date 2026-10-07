@@ -8,9 +8,11 @@ import { Timer } from '../home/DecisionsColumn';
 import { AuthorshipBadge, RecordLink, Section } from '../ui/bits';
 import { Icon } from '../ui/Icon';
 import { Decide } from './Decide';
+import { OverrideForm } from './OverrideControls';
 
 export function ProposalView({ item }: { item: QueueItem }) {
-  const { vm } = useStore();
+  const { vm, capOverride } = useStore();
+  const cap = item.capOverride ?? null;
   const d = item.decision as Proposal;
   const [trail, setTrail] = useState(false);
   const f = vm.fund;
@@ -126,6 +128,35 @@ export function ProposalView({ item }: { item: QueueItem }) {
         slider={{ min: d.takeLessStep, max: d.amount - d.takeLessStep, step: d.takeLessStep, initial: d.takeLessDefault }}
         previewFor={(amount) => proposalPreview(f, d, amount, 'less', 'Take less', true)}
       />
+
+      {/* A fourth answer, kept apart from the three above because it is a
+          different kind of act: not choosing among the agents' options but
+          overruling one of them. The agent's own reason for the cut comes first. */}
+      {cap && !closed && (
+        <>
+          <Section title={`${AGENTS[d.sizedBy].name} cut this from ${fmtCr(cap.sizedAmount)} to ${fmtCr(cap.cappedAmount)}`}>
+            <div className="card override-copy">
+              {cap.agentReason}
+              <div className="faint override-note">
+                Taking {fmtCr(cap.sizedAmount)} leaves {d.company} at {fmtPct(cap.preview.positionPct)} of the fund and cash at {fmtCr(cap.preview.cashAfter)}. {cap.rule}
+              </div>
+              {cap.breaches.map((b) => (
+                <div key={b} className="override-breach">
+                  <Icon name="alert" />
+                  {b[0].toUpperCase() + b.slice(1)}
+                </div>
+              ))}
+            </div>
+          </Section>
+          <OverrideForm
+            authority={cap}
+            subjectKey={cap.decisionId}
+            title="Overrule the cap · closes this proposal as your decision"
+            confirmLabel={`Take ${fmtCr(cap.sizedAmount)} instead`}
+            onConfirm={(reason, cosigner) => capOverride(cap.decisionId, reason, cosigner)}
+          />
+        </>
+      )}
 
       <div className="trail-toggle" style={{ marginTop: 12 }}>
         <button className="btn" onClick={() => setTrail((v) => !v)}>

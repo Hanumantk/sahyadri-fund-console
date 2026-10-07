@@ -67,7 +67,11 @@ export function DecisionsColumn({ cursor, setCursor }: { cursor: number; setCurs
 
   const closedAll = [
     ...vm.closed.map((c) => ({ id: c.id, label: c.closedLabel ?? '', title: c.title, atMs: c.outcome?.at ?? 0, kind: 'decision' as const })),
-    ...vm.blocked.map((b) => ({ id: b.id, label: b.label, title: `${b.company} · ${b.text}`, atMs: b.atMs, kind: 'blocked' as const })),
+    // A blocked item is no longer a dead row. It carries its authoring key so the
+    // panel can be opened on it, because "blocked" is the one closed outcome a
+    // person can still do something about.
+    ...vm.blocked.map((b) => ({ id: b.key, label: b.label, title: `${b.company} · ${b.text}`, atMs: b.atMs, kind: 'blocked' as const })),
+    ...vm.settledByYou.map((x) => ({ id: x.id, label: x.label, title: x.title, atMs: x.atMs, kind: 'settled' as const, selection: x.selection })),
   ].sort((a, b) => b.atMs - a.atMs);
 
   const openMeta = vm.open.length
@@ -124,20 +128,44 @@ export function DecisionsColumn({ cursor, setCursor }: { cursor: number; setCurs
           );
         })}
 
+        {/* Requests the rules would not let you grant, sent to the person who may.
+            They sit between what needs you and what is settled, because they are
+            neither: you have acted, and the answer has not come back. */}
+        {vm.escalations.length > 0 && (
+          <>
+            <div className="closed-head">
+              <span>Waiting on others</span>
+              <span>{vm.escalations.length}</span>
+            </div>
+            {vm.escalations.map((x) => {
+              const selected = x.selection !== null && selection?.kind === x.selection.kind && selection.id === x.selection.id;
+              return (
+                <button key={x.id} className={`closed-item${selected ? ' selected' : ''}`} onClick={() => x.selection && select(x.selection)}>
+                  <span className="t is-warn">
+                    <strong>Waiting on {x.toName}</strong>
+                    <br />
+                    {x.company} · {x.ask} · {x.waitingLine}
+                  </span>
+                  <span className="when">{fmtTime(x.sentAtMs)}</span>
+                </button>
+              );
+            })}
+          </>
+        )}
+
         <div className="closed-head">
           <span>Closed today</span>
           <span>{closedAll.length ? `${closedAll.length}` : 'none yet'}</span>
         </div>
         {closedAll.map((c) => {
-          const selected = selection?.kind === 'decision' && selection.id === c.id;
+          const selected = 'selection' in c ? false : selection?.kind === c.kind && selection.id === c.id;
           return (
             <button
               key={c.id}
               className={`closed-item${selected ? ' selected' : ''}`}
-              onClick={() => (c.kind === 'decision' ? select({ kind: 'decision', id: c.id }) : undefined)}
-              style={c.kind === 'blocked' ? { cursor: 'default' } : undefined}
+              onClick={() => select('selection' in c ? c.selection : { kind: c.kind, id: c.id })}
             >
-              <span className={`t${/^Expired|^Let lapse/.test(c.label) ? ' is-warn' : ''}`}>
+              <span className={`t${/^Expired|^Let lapse/.test(c.label) ? ' is-warn' : /^Overridden|^Overrode|^On exception/.test(c.label) ? ' is-alert' : ''}`}>
                 <strong>{c.label}</strong>
                 <br />
                 {c.title}

@@ -27,6 +27,10 @@ It lives in `src/data/scenario.ts` and nothing outside that file is an anchor.
 | Sector targets | `SECTOR_TARGETS` | per sector | What the Portfolio Agent trims towards. Never displayed. |
 | Traded value | `HOLDINGS[].advRupees` | per ticker | Average value traded in a day. Days to sell comes from it. |
 | Idle-cash date | `FUND.cashIdleSince` | 7 Sep 2026 | See "idle cash" in the glossary. |
+| Who may overrule | `OVERRIDE_POLICY` | per kind of override | The same policy the Rules page states in prose, in a form the console can evaluate. See §3a. |
+| Authority | `AUTHORITY` | per person | The role the rules are written against. Priya Nair's job title on screen is Portfolio Manager; her authority is Fund Manager. |
+| Override expiry | `OVERRIDE_LAPSES_AT` | 15:30 IST today | An override lasts the session. At the close it lapses and what it suspended is raised again. |
+| Reopen extension | `REOPEN_EXTENSION_MIN` | 15 minutes | How long a reopened decision stays open. Long enough to decide, short enough that reopening is not a way to never decide. |
 | Events | `EVENTS` | structured, templated | See §5. |
 
 Everything below is derived and must never be typed:
@@ -90,6 +94,105 @@ stored in basis points rather than the price being typed.
 Pieces still ahead of the clock are data like any other, and simply do not
 appear until the clock reaches them. The Bharti order's last four pieces land at
 10:07:30, 10:10:10, 10:12:50 and 10:15:30 while the screen is open.
+
+The clock is the only gate on a fill, with one exception: a person can stop the
+rest of an order. `rt.stopAfterPiece[orderId]` holds the last piece allowed to
+go, and pieces past it never fill however far the clock runs.
+
+```
+fills        = pieces whose time has come AND whose number ≤ the stop
+in flight    = 0 once stopped          ← the cash the stop releases
+```
+
+Everything downstream follows from `fills`, so a stop needs no other arithmetic:
+holdings, cash, the in-flight commitment and the log all move on their own. The
+pieces that already filled are trades and stay in all four.
+
+---
+
+## 3a. Overrides
+
+An override is **one agent decision suspended, for one instance, until the
+close**. It is not a rule change: the rule it suspends is still the rule, which
+is why an override carries an expiry and the rulebook does not.
+
+### What can be overruled, and where
+
+| Kind (`OverrideKind`) | The agent decision | Where the control is | May | Second signature | Lapses |
+| --- | --- | --- | --- | --- | --- |
+| `risk-block` | Risk refused a trade at a limit | Home → Closed today → the block | Fund Manager | Risk Manager, above 5% in one company or if it breaks another limit | 15:30 |
+| `compliance-block` | Compliance refused a trade on the mandate | Same | Compliance Officer **only** | — | 15:30 |
+| `limit-exception` | Risk holds a broken limit shut | Home → the broken limit | Fund Manager | Risk Manager, always | 15:30 |
+| `size-cap` | Portfolio cut a size to a cap | The proposal | Fund Manager | Risk Manager, above 5% in one company or if it breaks another limit | 15:30 |
+| `dropped-idea` | Research dropped an idea | Research Agent panel | Fund Manager | — | never: no money moves |
+| `agent-halt` | Monitoring halted an agent | The agent's panel, and the late-feed panel | Any human | — | never |
+| `expired-decision` | The clock closed a decision | The closed decision | Fund Manager | — | the extension, `REOPEN_EXTENSION_MIN` |
+
+And restraint, which needs no permission because it cannot cost the fund
+anything it had not already committed: **stop the rest of an order** (Execution
+Agent panel), **trim a broken limit** back to the limit or to its sector target
+(the broken limit), **pause** or **restore full speed** (any agent panel).
+
+Every one of these is also reachable from wherever its record turns up: an
+**act link** on the Audit trail row (`vm.actOn`) and a **What you can still do**
+list on the Portfolio holding (`vm.actOnTicker`).
+
+### The policy is in the Book, once
+
+`OVERRIDE_POLICY` in `scenario.ts` holds who may, the co-sign rule, who is
+told, who to ask instead, and what happens at the close. The running console
+checks it before offering anything, and the Rules page's *Who can overrule whom*
+is generated from it — a test fails if the two ever say different things.
+
+```
+permitted     = AUTHORITY[current user] ∈ mayOverrule
+needs cosign  = the cosign rule fires, OR the override breaks a second limit
+```
+
+The co-sign threshold is read against the position the override leaves
+behind, not the size of the one trade: on a ₹248.6 cr fund a 5% threshold on the
+trade would be ₹12.4 cr, above every override this fund could make.
+
+**A second limit always needs the Risk Manager.** Overriding one limit must not
+quietly break another. `limitBreaches()` names every limit a preview breaks;
+anything beyond the one being overruled is printed on the panel and turns the
+override into one that needs a co-signer. Taking the pre-cap ₹8.0 cr of Infosys,
+for instance, takes cash to ₹5.5 cr, below its ₹7.5 cr minimum.
+
+### When the rules say no
+
+The person at this console may not lift a Compliance block. The console does not
+pretend otherwise and does not leave them with nothing: it records the refusal,
+sends the request to the person the Book names (`askInstead`), and keeps it in a
+*Waiting on others* group on Home until it is answered or withdrawn. It can be
+chased, and each chase is recorded. Nobody answers it in this prototype, because
+there is no Compliance Officer at the console — and the screen says so by how long
+it has waited.
+
+### Three rules, enforced by `src/data/__tests__/override.test.ts`
+
+- **Nothing an agent did is deleted.** The blocked event keeps its place in the
+  log, its figure, and its place in the agent's tally. An agent's acknowledgement
+  has its own type, `override_acknowledged`, so no count of what agents decided
+  today moves because a person decided otherwise.
+- **Permission is checked against the Book**, never inferred from a button.
+- **Loosening expires; tightening does not.**
+
+### Counting
+
+An order can now be placed three ways, and the pipeline line says so once the
+third has happened:
+
+```
+orders placed = auto-cleared + approved by you + on your override
+```
+
+An order placed on an override carries `onOverride: true`. Taking the pre-cap
+size is your decision on the proposal, so it counts as approved by you.
+
+A blocked entry quotes the position the agent measured, so anything bought on the
+strength of that entry is taken back out before the figure is restated —
+otherwise the log would silently change its own number after the override.
 
 ---
 

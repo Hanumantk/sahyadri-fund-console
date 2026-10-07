@@ -400,6 +400,194 @@ export const FEEDS: Feed[] = [
 export const MONITORING_PAUSE_AT = today('10:03');
 
 // ---------------------------------------------------------------------------
+// Override authority
+//
+// The Rules page states who may overrule whom in prose. These are the same
+// facts in a form the running console can evaluate, so the page and the product
+// cannot drift apart. Policy, hand-entered: nothing here is computed.
+//
+// The asymmetry is the point. Loosening a control needs a written reason, often
+// a second person, and always an expiry. Tightening one — stopping an order the
+// agents already cleared — needs none of that, because it cannot cost the fund
+// anything it had not already committed.
+
+export type AuthorityRole = 'Fund Manager' | 'Risk Manager' | 'Compliance Officer' | 'Operations';
+
+/**
+ * The authority a person carries, as the rulebook names it. Their job title on
+ * screen is their own; this is the role the rules are written against.
+ */
+export const AUTHORITY: Record<PersonId, AuthorityRole> = {
+  priya: 'Fund Manager',
+  arjun: 'Risk Manager',
+  kavya: 'Compliance Officer',
+};
+
+export type ExpiryAction = 'force-trim' | 're-alert' | 'auto-revert';
+
+/**
+ * The kinds of agent decision a person can overrule. Keyed by what is overruled
+ * rather than by which agent did it, because the same agent can make decisions
+ * of very different weight: the Risk Agent refusing one trade is not the Risk
+ * Agent refusing to let a whole sector grow, and the rules treat them apart.
+ */
+export type OverrideKind =
+  | 'risk-block'
+  | 'compliance-block'
+  | 'limit-exception'
+  | 'size-cap'
+  | 'dropped-idea'
+  | 'agent-halt'
+  | 'expired-decision';
+
+/** When a second person must sign. */
+export type CosignRule =
+  | { when: 'never' }
+  | { when: 'always'; who: string }
+  /** Above this share of the fund in one company, after the override. */
+  | { when: 'above-position'; pct: number; who: string };
+
+export interface OverridePolicy {
+  /** The agent whose decision this overrules, or null for the system clock. */
+  agent: AgentId | null;
+  /** Roles that may. Empty means nobody may. */
+  mayOverrule: AuthorityRole[];
+  cosign: CosignRule;
+  /** Who must always be told, whether or not they co-signed. */
+  notify: PersonId | null;
+  /** Who it goes to when the person at the console may not do it. */
+  askInstead: PersonId | null;
+  /** What happens at the close. null: nothing lapses, because nothing loosened. */
+  atExpiry: ExpiryAction | null;
+  /** The rule as the Rules page states it. The Rules page reads it from here. */
+  subject: string;
+  rule: string;
+  detail: string;
+}
+
+export const OVERRIDE_POLICY: Record<OverrideKind, OverridePolicy> = {
+  'risk-block': {
+    agent: 'risk',
+    mayOverrule: ['Fund Manager'],
+    cosign: { when: 'above-position', pct: 5, who: 'Risk Manager' },
+    notify: 'arjun',
+    askInstead: 'arjun',
+    atExpiry: 're-alert',
+    subject: 'Risk Agent rejection',
+    rule: 'Fund Manager may override with a written reason.',
+    detail: 'Risk Manager notified always. Above 5% of fund in one company, or if it breaks any other limit, Risk Manager must co-sign.',
+  },
+  'compliance-block': {
+    agent: 'compliance',
+    mayOverrule: ['Compliance Officer'],
+    cosign: { when: 'never' },
+    notify: 'kavya',
+    askInstead: 'kavya',
+    atExpiry: 're-alert',
+    subject: 'Compliance block',
+    rule: 'Compliance Officer only.',
+    detail: 'Not the Fund Manager, at any size. Anyone else can send it to Compliance and see it answered.',
+  },
+  'limit-exception': {
+    agent: 'risk',
+    mayOverrule: ['Fund Manager'],
+    cosign: { when: 'always', who: 'Risk Manager' },
+    notify: 'arjun',
+    askInstead: 'arjun',
+    atExpiry: 're-alert',
+    subject: 'A broken limit',
+    rule: 'Fund Manager may hold it on exception until the close.',
+    detail: 'Risk Manager must co-sign every limit exception. Trimming back inside it needs no one.',
+  },
+  'size-cap': {
+    agent: 'portfolio',
+    mayOverrule: ['Fund Manager'],
+    cosign: { when: 'above-position', pct: 5, who: 'Risk Manager' },
+    notify: null,
+    askInstead: 'arjun',
+    atExpiry: 're-alert',
+    subject: 'Portfolio Agent size cap',
+    rule: 'Fund Manager may take the size before the cap.',
+    detail: 'Above 5% of fund in one company, or if it breaks any limit such as minimum cash, Risk Manager must co-sign.',
+  },
+  'dropped-idea': {
+    agent: 'research',
+    mayOverrule: ['Fund Manager'],
+    cosign: { when: 'never' },
+    notify: null,
+    askInstead: null,
+    atExpiry: null,
+    subject: 'Research Agent dropping an idea',
+    rule: 'Fund Manager may send it back to research.',
+    detail: 'It commits no money. A reinstated idea still has to be sized, cleared by Risk and Compliance, and come back to you.',
+  },
+  'agent-halt': {
+    agent: 'monitoring',
+    mayOverrule: ['Fund Manager', 'Risk Manager', 'Compliance Officer', 'Operations'],
+    cosign: { when: 'never' },
+    notify: null,
+    askInstead: null,
+    atExpiry: null,
+    subject: 'Assurance halt',
+    rule: 'Any human may resume.',
+    detail: 'No agent. No timer.',
+  },
+  'expired-decision': {
+    agent: null,
+    mayOverrule: ['Fund Manager'],
+    cosign: { when: 'never' },
+    notify: null,
+    askInstead: null,
+    atExpiry: null,
+    subject: 'A decision that expired',
+    rule: 'Fund Manager may reopen it with a written reason.',
+    detail: 'Each reopening adds a fixed extension. Nothing bought while it was closed.',
+  },
+};
+
+/** Which override applies to a blocked event, by the agent that blocked it. */
+export const BLOCK_KIND: Partial<Record<AgentId, OverrideKind>> = {
+  risk: 'risk-block',
+  compliance: 'compliance-block',
+};
+
+/**
+ * Restraint is not on the list above because it needs no permission. Stopping
+ * an order, trimming back inside a limit, pausing an agent: any human may, at
+ * any time, with a reason, and none of it expires. It cannot cost the fund
+ * anything it had not already committed.
+ */
+export const RESTRAINT_RULE = {
+  subject: 'Restraint',
+  rule: 'Any human may stop, trim or pause.',
+  detail: 'A reason, no second person, no expiry. Pieces already filled are trades and stand.',
+};
+
+/** The audit record is the one thing nobody overrules. */
+export const RECORD_RULE = {
+  subject: 'The audit record',
+  rule: 'Nobody.',
+  detail: 'It cannot be edited or overruled. An override is added to it, never written over it.',
+};
+
+/**
+ * An override lasts the session. At the close it lapses and whatever it
+ * suspended is raised again, so an exception granted in a hurry at 10:30 cannot
+ * quietly become the standing rule.
+ */
+export const OVERRIDE_LAPSES_AT = today('15:30');
+
+/** How much longer a reopened decision stays open, in minutes. */
+export const REOPEN_EXTENSION_MIN = 15;
+
+/**
+ * Stopping an order is restraint, not permission, so it is not an exception and
+ * carries no expiry. The Execution Agent may already cancel an unfilled order
+ * on its own; this is the same act, by a person.
+ */
+export const ORDER_STOP_RULE = 'Pieces already filled are trades and stand. Only what has not been placed can be stopped.';
+
+// ---------------------------------------------------------------------------
 // Holdings
 
 export type Sector =
@@ -943,6 +1131,23 @@ export type EventType =
   | 'agent_paused'
   | 'agent_resumed'
   | 'budget_changed'
+  // A person overruling an agent, and the three ways that ends: granted,
+  // refused because the rules do not allow it, or withdrawn before it lapsed.
+  // A refusal is recorded too. Asking and being told no is part of the record.
+  | 'override_granted'
+  | 'override_refused'
+  | 'override_withdrawn'
+  // An agent writing down that it was overruled. Its own type, so that no count
+  // of what agents decided today is moved by a person deciding otherwise.
+  | 'override_acknowledged'
+  | 'order_stopped'
+  | 'trim_instructed'
+  | 'idea_reinstated'
+  | 'decision_reopened'
+  // Sent to the person who may, when the person at the console may not.
+  | 'escalated'
+  | 'escalation_chased'
+  | 'escalation_withdrawn'
   | 'chat';
 
 export interface RawEvent {
@@ -982,6 +1187,12 @@ export interface RawEvent {
   decisionId?: string;
   /** A ticker whose weight the text quotes. */
   ticker?: string;
+  /**
+   * An order placed because a person overruled an agent, not because the
+   * agents cleared it or a person approved a proposal. The pipeline counts it
+   * as its own term, so "orders placed" still adds up after an override.
+   */
+  onOverride?: boolean;
   /** Set by eventsFor: the authoring key this display ID came from. */
   key?: string;
 }

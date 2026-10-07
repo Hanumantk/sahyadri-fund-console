@@ -1,4 +1,4 @@
-import { fmtAge, fmtCr, fmtDayMonth, fmtPct, fmtPrice, fmtSignedCr, fmtSignedPct, fmtTimeSec } from '../../data/format';
+import { fmtAge, fmtCr, fmtDayMonth, fmtPct, fmtPrice, fmtSignedCr, fmtSignedPct, fmtTime, fmtTimeSec } from '../../data/format';
 import { LIMITS } from '../../data/scenario';
 import { useStore } from '../../state/store';
 import { LimitBar } from '../ui/bits';
@@ -13,6 +13,8 @@ import { PORTFOLIO_SUMMARY } from '../../data/portfolio';
 export function Layer1Strip() {
   const { vm } = useStore();
   const f = vm.fund;
+  /** Broken limits a person is holding open until the close. */
+  const held = vm.limitOverrides.filter((x) => x.exception);
   const stale = f.stale;
   const staleLabel = stale ? `${fmtTimeSec(f.measuredAtMs).slice(0, 5)} · ${fmtAge(f.measuredAtMs, vm.nowMs)} old` : null;
 
@@ -93,7 +95,9 @@ export function Layer1Strip() {
           </div>
           <div className="block-sub">
             {vm.limits.broken.length
-              ? "Agents can't add to a broken limit · nothing is forced to sell"
+              ? held.length === vm.limits.broken.length
+                ? `On exception until ${fmtTime(held[0].exception!.lapsesAtMs)} · nothing is forced to sell`
+                : "Agents can't add to a broken limit · nothing is forced to sell"
               : vm.limits.near.length
                 ? `${PORTFOLIO_SUMMARY.exceptionCount} on exception`
                 : `Nothing above ${LIMITS.nearLimitPct}% of its limit`}

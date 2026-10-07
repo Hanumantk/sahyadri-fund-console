@@ -1,6 +1,6 @@
 import { fmtCr, MINUS } from './format';
 import { HOLDINGS } from './portfolio';
-import { CR, FUND } from './scenario';
+import { CR, FUND, OVERRIDE_POLICY, RECORD_RULE, RESTRAINT_RULE, type OverrideKind } from './scenario';
 
 export type RiskStance = 'conservative' | 'neutral' | 'aggressive';
 export type RuleValue = number | [number, number];
@@ -260,11 +260,18 @@ export const INITIAL_RULEBOOK: Rulebook = {
   riskStance: 'conservative',
   limits: initialLimits,
   agents: initialAgents,
+  // Read from the Book's override policy, which is also what the running
+  // console checks before it offers an override. One source, so the page that
+  // states the rule and the screen that enforces it cannot disagree.
   overrides: [
-    { id: 'risk-rejection', subject: 'Risk Agent rejection', rule: 'Fund Manager may override with a written reason.', detail: 'Risk Manager notified always. Above 5% of fund, Risk Manager must co-sign.' },
-    { id: 'compliance-block', subject: 'Compliance block', rule: 'Compliance Officer only.', detail: 'Not the Fund Manager, at any size.' },
-    { id: 'assurance-halt', subject: 'Assurance halt', rule: 'Any human may resume.', detail: 'No agent. No timer.' },
-    { id: 'audit-record', subject: 'The audit record', rule: 'Nobody.', detail: 'It cannot be edited or overruled.' },
+    ...(Object.entries(OVERRIDE_POLICY) as Array<[OverrideKind, (typeof OVERRIDE_POLICY)[OverrideKind]]>).map(([id, p]) => ({
+      id,
+      subject: p.subject,
+      rule: p.rule,
+      detail: p.detail,
+    })),
+    { id: 'restraint', ...RESTRAINT_RULE },
+    { id: 'audit-record', ...RECORD_RULE },
   ],
   prohibited: [
     { id: 'mandate-prohibited', source: 'mandate', label: 'From the mandate', entries: ['Tobacco', 'Defence'], access: 'locked' },

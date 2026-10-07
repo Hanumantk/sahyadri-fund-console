@@ -85,6 +85,15 @@ for (const state of STATES) {
     await page.keyboard.press('Escape');
   }
 
+  // Every blocked item, which is where an override is offered or refused.
+  const blockedCount = await page.locator('.closed-item').count();
+  for (let i = 0; i < blockedCount; i++) {
+    await page.locator('.closed-item').nth(i).click();
+    const title = (await page.locator('.panel-head h2').innerText()).replace(/\W+/g, '-').toLowerCase();
+    await capture(page, `${state}-closed-${i}-${title}`);
+    await page.keyboard.press('Escape');
+  }
+
   // Audit trail.
   await page.goto(`${base}/audit?state=${state}`, { waitUntil: 'networkidle' });
   await capture(page, `${state}-audit`);

@@ -1,11 +1,16 @@
-import type { QueueItem } from '../../data/derive';
+import { useState } from 'react';
+import type { QueueItem, TrimTo } from '../../data/derive';
 import { fmtAge, fmtCr, fmtPct, fmtTime } from '../../data/format';
+import type { AgentId } from '../../data/scenario';
 import { useStore } from '../../state/store';
 import { Badge, RecordLink, Section } from '../ui/bits';
+import { Icon } from '../ui/Icon';
+import { ExceptionInForce, OverrideForm, ReasonAction } from './OverrideControls';
 
 /** Late feed or broken limit: a fixed layout with the facts and the record, no decision buttons. */
 export function AttentionView({ item }: { item: QueueItem }) {
-  const { vm } = useStore();
+  const { vm, limitException, trim } = useStore();
+  const [trimTo, setTrimTo] = useState<TrimTo>('limit');
   if (item.kind === 'feed') {
     const feed = vm.feeds.find((f) => `FEED-${f.id.toUpperCase()}` === item.id)!;
     const flag = vm.monitorFlags.find((f) => f.kind === 'paused') ?? vm.monitorFlags.find((f) => f.kind === 'late');
@@ -50,6 +55,7 @@ export function AttentionView({ item }: { item: QueueItem }) {
             </div>
           </Section>
         </div>
+        <ResumeHalted ids={feed.dependents.filter((a) => vm.agents[a].haltedByAgent)} />
         <Section title="Numbers built on this feed">
           <div className="card" style={{ fontSize: 'var(--fs-12)', color: 'var(--text-2)' }}>
             Fund value {fmtCr(vm.fund.fundValue)}, value per unit, drawdown {fmtPct(vm.fund.drawdownPct)} and every limit are shown grey with their measured time ({fmtTime(vm.fund.measuredAtMs)}). Cash and order counts come from the orders feed, which is live.
@@ -65,6 +71,8 @@ export function AttentionView({ item }: { item: QueueItem }) {
   }
 
   const row = vm.limits.broken.find((r) => `LIMIT-${r.key.replace(':', '-').toUpperCase()}` === item.id)!;
+  const lo = vm.limitOverrides.find((l) => l.itemId === item.id) ?? null;
+  const plan = lo ? lo.trims.find((t) => t.to === trimTo) ?? lo.trims[0] ?? null : null;
   const ev = vm.monitorFlags.find((f) => f.kind === 'limit');
   const members = row.kind === 'sector' ? vm.fund.holdings.filter((h) => `${h.sector} sector` === row.name && h.shares > 0) : [];
   return (
@@ -100,10 +108,52 @@ export function AttentionView({ item }: { item: QueueItem }) {
         </Section>
         <Section title="What it means">
           <div className="card" style={{ fontSize: 'var(--fs-12)', lineHeight: 1.5, color: 'var(--text-2)' }}>
-            Agents can't add to {row.name.replace(' sector', '')} until it is back inside the limit. Nothing is forced to sell. Your options are to leave it, ask the Portfolio Agent for a trim, or raise the limit on Rules, which is a logged rule change.
+            Agents can't add to {row.name.replace(' sector', '')} until it is back inside the limit. Nothing is forced to sell. You can trim it back now, or hold it on exception until the close. Raising the limit itself is a rule change on Rules.
           </div>
         </Section>
       </div>
+      {lo && lo.exception ? (
+        <ExceptionInForce
+          ex={lo.exception}
+          subject={`${row.name} stays broken on the record and agents still may not add to it. ${lo.expiryLine}.`}
+        />
+      ) : (
+        lo && (
+          <>
+            {/* Restraint first: it needs only a reason, and it is the answer that
+                makes the breach go away rather than carrying it. */}
+            {plan && (
+              <div className="decide override-form">
+                <div className="section-title">Trim it back inside · needs only a reason</div>
+                {lo.trims.length > 1 && (
+                  <div className="buttons">
+                    {lo.trims.map((t) => (
+                      <button key={t.to} className={`btn${plan.to === t.to ? ' selected' : ''}`} onClick={() => setTrimTo(t.to)}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="override-copy">{plan.line}.</div>
+                <ReasonAction
+                  placeholder="Reason to trim, for the record"
+                  label={`Sell ${fmtCr(plan.amount)} of ${plan.company}`}
+                  icon="minus"
+                  onConfirm={(reason) => trim(lo.key, reason, plan.to)}
+                  note="The Portfolio Agent may trim to a limit on its own. This tells it to, now. Nothing lapses."
+                />
+              </div>
+            )}
+            <OverrideForm
+              authority={lo}
+              subjectKey={lo.key}
+              title="Or hold it on exception · until the close"
+              confirmLabel={`Hold ${row.name} on exception`}
+              onConfirm={(reason, cosigner) => limitException(lo.key, reason, cosigner)}
+            />
+          </>
+        )
+      )}
       {members.length > 0 && (
         <Section title="Holdings in this sector">
           <div className="card">
@@ -126,5 +176,57 @@ export function AttentionView({ item }: { item: QueueItem }) {
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * The agents a late feed halted, resumable from the panel that explains why they
+ * stopped. Each resume is an overrule of the Monitoring Agent and is logged as one.
+ */
+function ResumeHalted({ ids }: { ids: AgentId[] }) {
+  const { vm, resumeAgent } = useStore();
+  const [reason, setReason] = useState('');
+  const [err, setErr] = useState('');
+  if (ids.length === 0) return null;
+  const go = (list: AgentId[]) => {
+    if (!reason.trim()) return setErr('Add a one-line reason. It goes into the record.');
+    try {
+      for (const id of list) resumeAgent(id, reason);
+      setReason('');
+      setErr('');
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+  return (
+    <div className="decide override-form">
+      <div className="section-title">Resume them anyway · overrules the Monitoring Agent</div>
+      <div className="override-copy">{vm.agents[ids[0]].haltRule} The feed will still be late after you do.</div>
+      <div className="reason">
+        <input
+          placeholder="One-line reason, required. It goes into the record."
+          value={reason}
+          onChange={(e) => {
+            setReason(e.target.value);
+            setErr('');
+          }}
+        />
+        {err && <div className="err">{err}</div>}
+      </div>
+      <div className="confirm-row">
+        {ids.map((id) => (
+          <button key={id} className="btn" onClick={() => go([id])}>
+            <Icon name="play" />
+            Resume {vm.agents[id].name}
+          </button>
+        ))}
+        {ids.length > 1 && (
+          <button className="btn primary" onClick={() => go(ids)}>
+            <Icon name="play" />
+            Resume all {ids.length}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }

@@ -3,6 +3,7 @@
 import {
   AGENTS,
   AGENT_ORDER,
+  AUTHORITY,
   CANDIDATES,
   CR,
   CURRENT_USER,
@@ -16,6 +17,12 @@ import {
   LIMITS,
   MONITORING_PAUSE_AT,
   ORDERS_TODAY,
+  BLOCK_KIND,
+  ORDER_STOP_RULE,
+  OVERRIDE_LAPSES_AT,
+  OVERRIDE_POLICY,
+  REOPEN_EXTENSION_MIN,
+  SECTOR_TARGETS,
   PEOPLE,
   SOURCES,
   TRADES_0910,
@@ -27,9 +34,13 @@ import {
   type AgentStatus,
   type Break,
   type Decision,
+  type CosignRule,
+  type ExpiryAction,
+  type OverrideKind,
   type Feed,
   type FeedId,
   type Holding,
+  type PersonId,
   type Proposal,
   type RawEvent,
   type Sector,
@@ -54,7 +65,11 @@ export type DecisionStatus =
   | 'lapsed'
   | 'accepted_broker'
   | 'kept_ours'
-  | 'assigned';
+  | 'assigned'
+  // Proposal taken at the size the Portfolio Agent had before it applied a cap.
+  | 'taken_over_cap'
+  // A broken limit a person chose to hold until the close, with a co-signer.
+  | 'on_exception';
 
 export interface DecisionOutcome {
   status: DecisionStatus;
@@ -72,6 +87,34 @@ export interface AgentOverride {
   liveLine?: string;
 }
 
+/**
+ * An override a person granted today: one agent decision suspended, for one
+ * instance, until the close. It is not a rule change. The rule it suspends is
+ * still the rule, which is why this carries an expiry and the rulebook does not.
+ */
+export interface GrantedException {
+  id: string;
+  kind: OverrideKind;
+  /** The authoring key of the agent action that was overruled. */
+  eventKey: string;
+  /** The limit it holds open, for a limit exception: 'sector:Banking'. */
+  limitKey: string | null;
+  /** The agent that was overruled. */
+  agent: AgentId;
+  company: string;
+  ticker: string;
+  /** Rupees the override released. Zero for a halt that was lifted. */
+  amount: number;
+  reason: string;
+  cosigner: string | null;
+  grantedBy: PersonId;
+  grantedAtMs: number;
+  lapsesAtMs: number;
+  atExpiry: ExpiryAction;
+  /** Set when the person took it back before it lapsed. */
+  withdrawnAtMs?: number;
+}
+
 export interface Runtime {
   state: StateName;
   nowMs: number;
@@ -85,6 +128,38 @@ export interface Runtime {
   pausedAll: boolean;
   /** Agent overrides as they were before "Pause all agents", restored on resume. */
   prePause?: Partial<Record<AgentId, AgentOverride>>;
+  /**
+   * Orders a person stopped, by the last piece allowed to go. Pieces past it
+   * never fill, whatever the clock says. Keyed by order id.
+   */
+  stopAfterPiece: Record<string, number>;
+  /** Overrides granted today, in the order they were granted. */
+  exceptions: GrantedException[];
+  /** Requests sent to the person who may, when the person at the console may not. */
+  escalations: Escalation[];
+  /** Ideas a person sent back to research, by the authoring key of the drop. */
+  reinstated: Record<string, { atMs: number; reason: string }>;
+  /** Decisions a person reopened after they expired, by the new deadline. */
+  extendedUntil: Record<string, number>;
+}
+
+/**
+ * A request for an override the person at the console may not grant. It stays
+ * open, and visible, until it is answered or withdrawn; nobody answering it is
+ * itself something the screen says.
+ */
+export interface Escalation {
+  id: string;
+  kind: OverrideKind;
+  /** The authoring key of what it is about. */
+  subjectKey: string;
+  to: PersonId;
+  company: string;
+  /** What is being asked, in a sentence. */
+  ask: string;
+  sentAtMs: number;
+  chasedAtMs: number[];
+  withdrawnAtMs?: number;
 }
 
 export function initialRuntime(state: StateName, nowMs: number): Runtime {
@@ -99,6 +174,11 @@ export function initialRuntime(state: StateName, nowMs: number): Runtime {
     agentOverrides: {},
     budgets: {},
     pausedAll: false,
+    stopAfterPiece: {},
+    exceptions: [],
+    escalations: [],
+    reinstated: {},
+    extendedUntil: {},
   };
 }
 
@@ -176,6 +256,14 @@ export interface OrderFigure extends OrderToday {
   inFlightRupees: number;
   complete: boolean;
   completedAtMs: number | null;
+  /** The last piece allowed to go, when a person stopped the order. */
+  stoppedAfterPiece: number | null;
+  stopped: boolean;
+  /** Pieces that were placed, and pieces that now never will be. */
+  placedPieces: number;
+  unplacedPieces: number;
+  /** True while there is something left to stop. */
+  stoppable: boolean;
 }
 
 function fillTimes(o: OrderToday, state: StateName): string[] {
@@ -204,7 +292,12 @@ export function deriveOrders(rt: Runtime): OrderFigure[] {
         atMs: ms(at),
       };
     });
-    const fills = all.filter((f) => f.atMs <= rt.nowMs);
+    // A stopped order is the one case where the clock is not the only gate. A
+    // piece past the stop never fills, however late the morning runs, which is
+    // what makes the stop a real control rather than a label.
+    const stoppedAfterPiece = rt.stopAfterPiece[o.id] ?? null;
+    const stopped = stoppedAfterPiece !== null;
+    const fills = all.filter((f) => f.atMs <= rt.nowMs && (stoppedAfterPiece === null || f.piece <= stoppedAfterPiece));
     const filledShares = fills.reduce((s, f) => s + f.shares, 0);
     const remainingShares = o.shares - filledShares;
     const complete = fills.length === o.pieces;
@@ -216,9 +309,16 @@ export function deriveOrders(rt: Runtime): OrderFigure[] {
       filledShares,
       filledRupees: fills.reduce((s, f) => s + f.amount, 0),
       remainingShares,
-      inFlightRupees: remainingShares * price,
+      // Stopping an order releases the cash it had promised. Nothing else about
+      // it changes: the pieces that filled are trades and they stand.
+      inFlightRupees: stopped ? 0 : remainingShares * price,
       complete,
       completedAtMs: complete ? all[all.length - 1].atMs : null,
+      stoppedAfterPiece,
+      stopped,
+      placedPieces: fills.length,
+      unplacedPieces: o.pieces - fills.length,
+      stoppable: !stopped && !complete && fills.length < o.pieces,
     };
   });
 }
@@ -366,6 +466,12 @@ export interface TokenContext {
   feeds: FeedFigure[];
   orders: OrderFigure[];
   counts: AgentCounts;
+  /**
+   * Shares a person's own decisions have added since, by ticker. A log entry
+   * quotes the position the agent measured, so anything bought on the strength
+   * of that entry has to come back out before the figure is restated.
+   */
+  boughtSinceByTicker: Record<string, number>;
 }
 
 /** The figures every template can reach, whatever event it belongs to. */
@@ -468,7 +574,13 @@ export function eventTokens(e: RawEvent, ctx: TokenContext): Tokens {
 
   if (e.ticker && e.amount !== undefined) {
     const h = ctx.fund.holdings.find((x) => x.ticker === e.ticker);
-    t.tickerPlusAmountPct = fmtPct((((h?.value ?? 0) + e.amount) / ctx.fund.fundValue) * 100);
+    // What the position would have become, measured from the position the agent
+    // was looking at. Shares bought since — on an override of this very block —
+    // are taken back out, or the entry would restate its own figure after the
+    // fact and the log would stop agreeing with what was decided.
+    const sinceShares = ctx.boughtSinceByTicker[e.ticker] ?? 0;
+    const asMeasured = (h?.value ?? 0) - sinceShares * (h?.price ?? 0);
+    t.tickerPlusAmountPct = fmtPct(((asMeasured + e.amount) / ctx.fund.fundValue) * 100);
   }
 
   if (e.feedId) {
@@ -519,7 +631,7 @@ export function contextFor(rt: Runtime): { ctx: TokenContext; tokens: Tokens; or
   const fund = deriveFund(rt, feeds, orders);
   const limits = deriveLimits(fund, rt.state);
   const counts = deriveCounts(eventsFor(rt, orders));
-  const ctx: TokenContext = { state: rt.state, nowMs: rt.nowMs, fund, limits, feeds, orders, counts };
+  const ctx: TokenContext = { state: rt.state, nowMs: rt.nowMs, fund, limits, feeds, orders, counts, boughtSinceByTicker: rt.shareDelta };
   return { ctx, tokens: buildTokens(ctx), orders };
 }
 
@@ -830,6 +942,8 @@ export interface AgentCounts {
   complianceChecked: number;
   complianceBlocked: number;
   ordersPlaced: number;
+  /** Orders placed because a person overruled an agent. */
+  ordersOnOverride: number;
   buys: number;
   sells: number;
   traded: number;
@@ -863,6 +977,7 @@ export function deriveCounts(events: RawEvent[]): AgentCounts {
     complianceChecked: n('compliance_cleared', 'compliance') + n('compliance_blocked', 'compliance'),
     complianceBlocked: n('compliance_blocked', 'compliance'),
     ordersPlaced: n('order_placed', 'execution'),
+    ordersOnOverride: t.filter((e) => e.type === 'order_placed' && e.actor === 'execution' && e.onOverride).length,
     buys: fills.filter((e) => e.side === 'buy').length,
     sells: fills.filter((e) => e.side === 'sell').length,
     traded: fills.reduce((s, e) => s + (e.amount ?? 0), 0),
@@ -919,6 +1034,24 @@ export interface AgentFigure {
   recent: RawEvent[];
   lastActionMs: number | null;
   coloured: boolean;
+  /**
+   * True when another agent stopped this one, not a person. Resuming it is then
+   * an override of that agent's judgement rather than undoing your own pause,
+   * and the rules treat the two differently.
+   */
+  haltedByAgent: boolean;
+  /** The agent that halted it, when one did. */
+  haltedBy: AgentId | null;
+  /** What the rulebook says about lifting that halt. */
+  haltRule: string | null;
+  /** Orders a person can still stop, for the agent that is placing them. */
+  stoppable: StoppableOrder[];
+  /** Slowed by a person. Undoing your own throttle is housekeeping, not an override. */
+  throttledByPerson: boolean;
+  /** Ideas this agent dropped today, each with its own way back. Research only. */
+  dropped: DroppedIdea[];
+  /** Overrides in force against this agent's decisions. */
+  overruled: GrantedException[];
 }
 
 export function actorName(id: ActorId): string {
@@ -933,8 +1066,16 @@ export function actorKind(id: ActorId): 'agent' | 'person' | 'system' {
   return 'agent';
 }
 
-export function deriveAgents(rt: Runtime, events: RawEvent[], feeds: FeedFigure[], counts: AgentCounts, tokens: Tokens = {}): Record<AgentId, AgentFigure> {
+export function deriveAgents(
+  rt: Runtime,
+  events: RawEvent[],
+  feeds: FeedFigure[],
+  counts: AgentCounts,
+  tokens: Tokens = {},
+  orders: OrderFigure[] = [],
+): Record<AgentId, AgentFigure> {
   const out = {} as Record<AgentId, AgentFigure>;
+  const stoppable = deriveStoppable(orders);
   const ids: AgentId[] = [...AGENT_ORDER, 'monitoring'];
   for (const id of ids) {
     const a = AGENTS[id];
@@ -951,6 +1092,7 @@ export function deriveAgents(rt: Runtime, events: RawEvent[], feeds: FeedFigure[
         : `${st}${changedBy ? ` by ${actorName(changedBy)}` : ''}${changedAtMs ? ` · ${fmtTime(changedAtMs)}` : ''}${why ? ` · '${why}'` : ''}`;
     const mine = events.filter((e) => e.actor === id);
     const lastAction = mine.length ? ms(mine[mine.length - 1].at) : null;
+    const haltedBy = st === 'Paused' && changedBy && changedBy !== id && actorKind(changedBy) === 'agent' ? (changedBy as AgentId) : null;
     out[id] = {
       id,
       name: a.name,
@@ -972,6 +1114,16 @@ export function deriveAgents(rt: Runtime, events: RawEvent[], feeds: FeedFigure[
       recent: mine.slice(-6).reverse(),
       lastActionMs: lastAction,
       coloured: st !== 'Running' && st !== 'Idle' && st !== 'Waiting',
+      // Halted by another agent. An agent that put itself into Waiting or Needs
+      // you has not been halted by anyone, and there is nothing to overrule: it
+      // is telling you it is stuck, not being held.
+      haltedByAgent: haltedBy !== null,
+      haltedBy,
+      haltRule: haltedBy ? authorityFor('agent-halt').rule : null,
+      stoppable: stoppable.filter((o) => ORDERS_TODAY.find((x) => x.id === o.id)?.placedBy === id),
+      throttledByPerson: st === 'Throttled' && Boolean(changedBy && actorKind(changedBy) === 'person'),
+      dropped: id === 'research' ? deriveDropped(rt, events) : [],
+      overruled: rt.exceptions.filter((x) => x.agent === id && !x.withdrawnAtMs),
     };
   }
   return out;
@@ -1035,6 +1187,10 @@ export interface QueueItem {
   decision?: Decision;
   previews: Preview[];
   raisedBy: string;
+  /** The size the Portfolio Agent cut, and what taking it anyway would need. */
+  capOverride?: CapOverride | null;
+  /** How to reopen it, when it expired before anyone decided. */
+  reopen?: ReopenOption | null;
 }
 
 function pctOfFund(f: FundFigures, rupees: number): number {
@@ -1131,6 +1287,8 @@ function closedLabel(d: Decision, o: DecisionOutcome): string {
       return 'Kept our record · chasing the broker';
     case 'assigned':
       return 'Assigned to Operations staff';
+    case 'taken_over_cap':
+      return `Overrode the cap · ${fmtCr(o.amount ?? 0)} · buying`;
     default:
       return d.id;
   }
@@ -1143,6 +1301,7 @@ export function deriveQueue(
   limits: LimitsSummary,
   decisions: Decision[],
   inFlight = 0,
+  events: RawEvent[] = [],
 ): { open: QueueItem[]; closed: QueueItem[] } {
   const items: QueueItem[] = [];
   for (const d of decisions) {
@@ -1155,7 +1314,7 @@ export function deriveQueue(
     const flags: Flag[] = [];
     let previews: Preview[] = [];
     if (d.kind === 'proposal') {
-      deadlineMs = ms(d.expiresAt);
+      deadlineMs = rt.extendedUntil[d.id] ?? ms(d.expiresAt);
       deadlineKind = 'expires';
       const pct = pctOfFund(f, d.amount);
       ask = `Buy ${fmtCr(d.amount)} of ${d.company}, making it ${fmtPct(pct)} of the fund`;
@@ -1169,7 +1328,7 @@ export function deriveQueue(
         proposalPreview(f, d, 0, 'decline', 'Decline', true, inFlight),
       ];
     } else if (d.kind === 'verdict') {
-      deadlineMs = ms(d.expiresAt);
+      deadlineMs = rt.extendedUntil[d.id] ?? ms(d.expiresAt);
       deadlineKind = 'expires';
       ask = `${d.company}: Bull says buy ${fmtCr(d.bull.amount)}, Bear says buy nothing`;
       byLine = `Raised by ${AGENTS[d.proposedBy].name} · Bull and Bear split on one assumption`;
@@ -1219,6 +1378,10 @@ export function deriveQueue(
       decision: d,
       previews,
       raisedBy,
+      capOverride: d.kind === 'proposal' && status === 'open' ? capOverrideFor(rt, f, d, events, inFlight) : null,
+      // Only an expiry can be reopened. A decision someone made is theirs to
+      // live with; it is not an agent's to overrule.
+      reopen: d.kind !== 'break' && status === 'expired' ? reopenFor(rt, d.id, events) : null,
     });
   }
 
@@ -1242,8 +1405,11 @@ export function deriveQueue(
     });
   }
   for (const row of limits.broken) {
+    // A broken limit held on exception is settled until the close. It leaves the
+    // open list for Closed today, still a broken limit, saying who holds it open.
+    const ex = coveringException(rt, row);
     items.push({
-      id: `LIMIT-${row.key.replace(':', '-').toUpperCase()}`,
+      id: limitItemId(row.key),
       kind: 'limit',
       company: row.name,
       title: `Over limit · ${row.name}`,
@@ -1254,7 +1420,9 @@ export function deriveQueue(
       deadlineKind: 'none',
       msLeft: null,
       urgent: false,
-      status: 'open',
+      status: ex ? 'on_exception' : 'open',
+      outcome: ex ? { status: 'on_exception', at: ex.grantedAtMs, by: ex.grantedBy, reason: ex.reason } : undefined,
+      closedLabel: ex ? `On exception until ${fmtTime(ex.lapsesAtMs)} · ${ex.id}` : undefined,
       previews: [],
       raisedBy: 'Risk Agent',
     });
@@ -1278,26 +1446,664 @@ function fmtLakhLike(rupees: number): string {
 
 export interface BlockedItem {
   id: string;
+  /** The authoring key. Display ids are renumbered per state; this is not. */
+  key: string;
   company: string;
   label: string;
   text: string;
   atMs: number;
   by: string;
+  /** Set once a person overruled it, so the list can say so without losing it. */
+  overriddenAtMs: number | null;
 }
 
-export function deriveBlocked(events: RawEvent[]): BlockedItem[] {
+export function deriveBlocked(events: RawEvent[], exceptions: GrantedException[] = []): BlockedItem[] {
   return todayEvents(events)
     .filter((e) => e.type === 'risk_blocked' || e.type === 'compliance_blocked')
-    .map((e) => ({
-      id: e.id,
-      company: e.company ?? '',
-      label: `Blocked by ${actorName(e.actor)}`,
-      text: e.text.replace(/^Blocked: /, ''),
-      atMs: ms(e.at),
-      by: actorName(e.actor),
-    }))
+    .map((e) => {
+      const key = e.key ?? e.id;
+      // An overridden block is still a block. It keeps its place in the list and
+      // its place in the count; what changes is that it now says who overruled
+      // it. Nothing a person does removes an agent's decision from the record.
+      const live = exceptions.find((x) => x.eventKey === key && !x.withdrawnAtMs);
+      return {
+        id: e.id,
+        key,
+        company: e.company ?? '',
+        label: live ? `Overridden · blocked by ${actorName(e.actor)}` : `Blocked by ${actorName(e.actor)}`,
+        text: e.text.replace(/^Blocked: /, ''),
+        atMs: ms(e.at),
+        by: actorName(e.actor),
+        overriddenAtMs: live ? live.grantedAtMs : null,
+      };
+    })
     .reverse();
 }
+
+// ---------------------------------------------------------------------------
+// Overrides
+//
+// What a person may do about an agent's decision, worked out from the policy in
+// the Book and the state of the fund — never from the component that shows it.
+// Three answers are possible and all three are useful: you may, you may only
+// with a second person, and you may not and here is who to send it to.
+
+export type OverrideVerdict = 'permitted' | 'needs-cosign' | 'refused';
+
+/** The Book's answer for one kind of override, at one position size. */
+export interface Authority {
+  kind: OverrideKind;
+  verdict: OverrideVerdict;
+  /** The rule as the Rules page states it. */
+  rule: string;
+  /** Why the console will not do it, when it will not. */
+  refusalLine: string | null;
+  /** Who it can be sent to instead. */
+  askInstead: PersonId | null;
+  askInsteadName: string | null;
+  /** Who is told whatever happens. */
+  notifyLine: string | null;
+  /** Who must co-sign, and why, when someone must. */
+  cosignWho: string | null;
+  cosignLine: string | null;
+  /** When it lapses. null when nothing loosened and so nothing can lapse. */
+  lapsesAtMs: number | null;
+  expiryLine: string;
+  atExpiry: ExpiryAction | null;
+}
+
+const EXPIRY_COPY: Record<ExpiryAction, string> = {
+  're-alert': 'it is raised again and comes back to you',
+  'force-trim': 'the Portfolio Agent trims the position back inside the limit',
+  'auto-revert': 'it reverts on its own',
+};
+
+function cosignNeeded(rule: CosignRule, positionPct: number | null): { who: string; line: string } | null {
+  if (rule.when === 'never') return null;
+  if (rule.when === 'always') return { who: rule.who, line: `Every exception to a limit needs ${rule.who} to sign it` };
+  // Read against the position the override leaves behind, not the one trade. A
+  // threshold measured on the trade would sit above every override this fund
+  // could make, and a control that can never fire is not a control.
+  if (positionPct === null || positionPct <= rule.pct) return null;
+  return {
+    who: rule.who,
+    line: `It leaves ${fmtPct(positionPct)} of the fund in one company, above the ${fmtPct(rule.pct, 0)} co-sign threshold`,
+  };
+}
+
+export function authorityFor(kind: OverrideKind, positionPct: number | null = null): Authority {
+  const policy = OVERRIDE_POLICY[kind];
+  const user = AUTHORITY[CURRENT_USER];
+  const may = policy.mayOverrule.includes(user);
+  const cosign = may ? cosignNeeded(policy.cosign, positionPct) : null;
+  const lapsesAtMs = policy.atExpiry ? ms(OVERRIDE_LAPSES_AT) : null;
+  return {
+    kind,
+    verdict: !may ? 'refused' : cosign ? 'needs-cosign' : 'permitted',
+    rule: `${policy.rule} ${policy.detail}`,
+    refusalLine: may
+      ? null
+      : `Only ${policy.mayOverrule.join(' or ')} may lift this. Your authority is ${user}, and the console will not do it for you.`,
+    askInstead: may ? null : policy.askInstead,
+    askInsteadName: !may && policy.askInstead ? PEOPLE[policy.askInstead].name : null,
+    notifyLine: policy.notify ? `${PEOPLE[policy.notify].name} is told either way` : null,
+    cosignWho: cosign?.who ?? null,
+    cosignLine: cosign?.line ?? null,
+    lapsesAtMs,
+    expiryLine:
+      lapsesAtMs !== null && policy.atExpiry
+        ? `Holds until ${fmtTime(lapsesAtMs)}, then ${EXPIRY_COPY[policy.atExpiry]}`
+        : 'Nothing lapses, because nothing was loosened',
+    atExpiry: policy.atExpiry,
+  };
+}
+
+/**
+ * Every limit an override would break, in each limit's own words. An override
+ * of one limit must not quietly break another: whatever else it breaks is
+ * named on the screen and makes a second signature necessary.
+ */
+export function limitBreaches(f: FundFigures, p: Preview, company: string): { kind: 'company' | 'sector' | 'cash'; line: string }[] {
+  const out: { kind: 'company' | 'sector' | 'cash'; line: string }[] = [];
+  if (p.positionPct > LIMITS.maxCompanyPct) {
+    out.push({ kind: 'company', line: `${company} would be ${fmtPct(p.positionPct)} of the fund, above the ${fmtPct(LIMITS.maxCompanyPct, 0)} ceiling` });
+  }
+  if (p.sectorUsedPct > 100) {
+    out.push({ kind: 'sector', line: `${p.sectorName} would be ${fmtPct(p.sectorPct)} of the fund, above its ${fmtPct(LIMITS.maxSectorPct, 0)} limit` });
+  }
+  if (p.cashAfterPct < LIMITS.minCashPct) {
+    out.push({ kind: 'cash', line: `cash would fall to ${fmtCr(p.cashAfter)}, below its ${fmtPct(LIMITS.minCashPct, 0)} minimum of ${fmtCr(f.minCashRupees)}` });
+  }
+  return out;
+}
+
+/** Turn a permitted override into one that needs the Risk Manager, when it breaks a limit besides its own. */
+function withSecondBreach(a: Authority, extra: string[]): Authority {
+  if (extra.length === 0 || a.verdict === 'refused') return a;
+  const who = 'Risk Manager';
+  const line = `It also breaks a limit: ${extra.join('; ')}`;
+  return {
+    ...a,
+    verdict: 'needs-cosign',
+    cosignWho: a.cosignWho ?? who,
+    cosignLine: a.cosignLine ? `${a.cosignLine}. ${line}` : line,
+  };
+}
+
+/** The live exception for a subject, if one has been granted and not withdrawn. */
+function liveException(rt: Runtime, key: string): GrantedException | null {
+  return rt.exceptions.find((x) => x.eventKey === key && !x.withdrawnAtMs) ?? null;
+}
+
+/** The open escalation for a subject, if one has been sent and not withdrawn. */
+function openEscalation(rt: Runtime, key: string): Escalation | null {
+  return rt.escalations.find((x) => x.subjectKey === key && !x.withdrawnAtMs) ?? null;
+}
+
+// --- Blocks ---------------------------------------------------------------
+
+export interface OverrideOption extends Authority {
+  /** The blocked event's display id, for the record link. */
+  id: string;
+  /** Its authoring key, which is what the action and the selection refer to. */
+  key: string;
+  agent: AgentId;
+  agentName: string;
+  company: string;
+  ticker: string;
+  amount: number;
+  /** The agent's own sentence, from the record, so its case is put first. */
+  agentReason: string;
+  atMs: number;
+  /** What the agent did, named in its own terms: a measurement or a check. */
+  measuredTitle: string;
+  /** Why no size and no argument changes it. Different for a limit and a ban. */
+  natureLine: string;
+  /** What the override would do, in the same three figures a proposal shows. */
+  preview: Preview | null;
+  /** The limit it breaks, in the limit's own words. */
+  breachLine: string;
+  /** Limits it would break besides the one it overrides. */
+  extraBreaches: string[];
+  exception: GrantedException | null;
+  escalation: Escalation | null;
+}
+
+export function deriveOverrides(rt: Runtime, f: FundFigures, events: RawEvent[], inFlight = 0): OverrideOption[] {
+  return todayEvents(events)
+    .filter((e) => e.type === 'risk_blocked' || e.type === 'compliance_blocked')
+    .map((e) => {
+      const key = e.key ?? e.id;
+      const agent = e.actor as AgentId;
+      const kind = BLOCK_KIND[agent] ?? 'risk-block';
+      const amount = e.amount ?? 0;
+      const ticker = e.ticker ?? '';
+      const spec = ticker ? holdingSpec(ticker) : undefined;
+      const preview = spec && amount > 0 ? overridePreview(f, spec, amount, inFlight) : null;
+      // The block being overridden is the company ceiling. Anything else the
+      // trade breaks — sector, minimum cash — is a second exception.
+      const extra = preview ? limitBreaches(f, preview, e.company ?? '').filter((b) => b.kind !== 'company').map((b) => b.line) : [];
+      return {
+        ...withSecondBreach(authorityFor(kind, preview ? preview.positionPct : null), extra),
+        extraBreaches: extra,
+        id: e.id,
+        key,
+        agent,
+        agentName: actorName(agent),
+        company: e.company ?? '',
+        ticker,
+        amount,
+        agentReason: e.text.replace(/^Blocked: /, ''),
+        atMs: ms(e.at),
+        // A limit is arithmetic and an override suspends the arithmetic for one
+        // trade. A mandate exclusion is not arithmetic at all, and saying it is
+        // would invite the reader to think a smaller size would get past it.
+        measuredTitle: e.type === 'risk_blocked' ? `What ${actorName(agent)} measured` : `What ${actorName(agent)} checked`,
+        natureLine:
+          e.type === 'risk_blocked'
+            ? 'It is not a judgement about the company. The limit is arithmetic, and the agent cannot waive it.'
+            : 'This is the mandate, not a limit. No size makes it allowed, and trimming the order changes nothing.',
+        preview,
+        breachLine: preview && spec ? overrideBreachLine(preview, spec) : '',
+        exception: liveException(rt, key),
+        escalation: openEscalation(rt, key),
+      };
+    })
+    .reverse();
+}
+
+/** The same three figures a proposal shows, for an amount an agent refused. */
+function overridePreview(f: FundFigures, spec: Holding, amount: number, inFlight: number): Preview {
+  const held = f.holdings.find((h) => h.ticker === spec.ticker);
+  const positionValue = (held?.value ?? 0) + amount;
+  const sector = sectorFor(f, spec.ticker);
+  const sectorValue = sector.value + amount;
+  const cashAfter = f.cash - amount - inFlight;
+  return {
+    key: 'override',
+    label: 'Override',
+    amount,
+    positionPct: pctOfFund(f, positionValue),
+    sectorName: sector.name,
+    sectorPct: pctOfFund(f, sectorValue),
+    sectorUsedPct: (pctOfFund(f, sectorValue) / LIMITS.maxSectorPct) * 100,
+    cashAfter,
+    cashAfterPct: (cashAfter / f.fundValue) * 100,
+    needsReason: true,
+    summary: `Buys ${fmtCr(amount)} the agent refused to buy`,
+  };
+}
+
+/** The breach stated in the limit's own terms, not softened. */
+function overrideBreachLine(p: Preview, spec: Holding): string {
+  const over = p.positionPct - LIMITS.maxCompanyPct;
+  if (over > 0) {
+    return `${spec.company} would be ${fmtPct(p.positionPct)} of the fund, ${fmtPct(over)} above the ${fmtPct(LIMITS.maxCompanyPct, 0)} ceiling`;
+  }
+  if (p.sectorUsedPct > 100) {
+    return `${p.sectorName} would be ${fmtPct(p.sectorPct)} of the fund, above its ${fmtPct(LIMITS.maxSectorPct, 0)} limit`;
+  }
+  return `No limit is breached by the size. The block was on the mandate, not the arithmetic.`;
+}
+
+// --- Broken limits --------------------------------------------------------
+//
+// A broken limit has two answers and they are not symmetrical. Trimming back
+// inside it is restraint: a reason, no second person, no expiry. Holding it on
+// exception is permission: a reason, the Risk Manager's signature, and a lapse
+// at the close.
+
+export type TrimTo = 'limit' | 'target';
+
+export interface TrimPlan {
+  to: TrimTo;
+  /** "Back to the limit", "Back to its target weight" */
+  label: string;
+  ticker: string;
+  company: string;
+  /** Rupees to sell, rounded up so the limit is left with room, not at the line. */
+  amount: number;
+  /** Where the limit lands after. */
+  afterPct: number;
+  line: string;
+}
+
+export interface LimitOverride extends Authority {
+  /** The queue item id: 'LIMIT-SECTOR-BANKING'. */
+  itemId: string;
+  /** The limit key: 'sector:Banking'. */
+  key: string;
+  name: string;
+  pct: number;
+  limitPct: number;
+  overBy: number;
+  /** The first is the least that ends the breach. */
+  trims: TrimPlan[];
+  exception: GrantedException | null;
+  escalation: Escalation | null;
+}
+
+/** The queue id a broken limit is shown under. */
+export function limitItemId(key: string): string {
+  return `LIMIT-${key.replace(':', '-').toUpperCase()}`;
+}
+
+/** An exception that holds a limit open: granted on the limit itself, or on a trade that broke it. */
+function coveringException(rt: Runtime, row: LimitRow): GrantedException | null {
+  const ticker = row.kind === 'company' ? row.key.split(':')[1] : null;
+  return (
+    rt.exceptions.find(
+      (x) =>
+        !x.withdrawnAtMs &&
+        (x.limitKey === row.key || (ticker !== null && x.ticker === ticker && (x.kind === 'risk-block' || x.kind === 'size-cap'))),
+    ) ?? null
+  );
+}
+
+/** Rupees, rounded up to the next tenth of a crore. A trim lands inside the limit, not on it. */
+function roundUpTenthCr(rupees: number): number {
+  return Math.ceil(rupees / (0.1 * CR)) * 0.1 * CR;
+}
+
+/**
+ * The trims a person can choose between. Back to the limit is the least that
+ * ends the breach; back to the target weight is where the Portfolio Agent would
+ * trim to on its own. A company has a ceiling but no target, so it has only the
+ * first.
+ */
+function trimPlans(f: FundFigures, row: LimitRow): TrimPlan[] {
+  const toLimit = trimPlan(f, row, -row.headroom, 'limit', 'Back to the limit');
+  if (!toLimit) return [];
+  const sector = row.kind === 'sector' ? (row.key.split(':')[1] as Sector) : null;
+  const target = sector ? SECTOR_TARGETS[sector] : undefined;
+  if (target === undefined || target >= row.limitPct) return [toLimit];
+  const toTarget = trimPlan(f, row, ((row.pct - target) / 100) * f.fundValue, 'target', 'Back to its target weight');
+  return toTarget && toTarget.amount > toLimit.amount ? [toLimit, toTarget] : [toLimit];
+}
+
+function trimPlan(f: FundFigures, row: LimitRow, over: number, to: TrimTo, label: string): TrimPlan | null {
+  if (over <= 0) return null;
+  // A company limit trims that company. A sector limit trims its largest name,
+  // which is the least disruptive single sale that brings the sector back.
+  const target =
+    row.kind === 'company'
+      ? f.holdings.find((h) => `company:${h.ticker}` === row.key)
+      : [...f.holdings].filter((h) => `sector:${h.sector}` === row.key && h.shares > 0).sort((a, b) => b.value - a.value)[0];
+  if (!target) return null;
+  const amount = Math.min(roundUpTenthCr(over), target.value);
+  const afterPct = row.pct - pctOfFund(f, amount);
+  return {
+    to,
+    label,
+    ticker: target.ticker,
+    company: target.company,
+    amount,
+    afterPct,
+    line: `Sell ${fmtCr(amount)} of ${target.company} · ${row.name} goes from ${fmtPct(row.pct)} to ${fmtPct(afterPct)} of the fund`,
+  };
+}
+
+export function deriveLimitOverrides(rt: Runtime, f: FundFigures, limits: LimitsSummary): LimitOverride[] {
+  return limits.broken.map((row) => {
+    const key = row.key;
+    return {
+      ...authorityFor('limit-exception'),
+      itemId: limitItemId(key),
+      key,
+      name: row.name,
+      pct: row.pct,
+      limitPct: row.limitPct,
+      overBy: -row.headroom,
+      trims: trimPlans(f, row),
+      exception: coveringException(rt, row),
+      escalation: openEscalation(rt, key),
+    };
+  });
+}
+
+// --- A size the Portfolio Agent cut ---------------------------------------
+
+export interface CapOverride extends Authority {
+  decisionId: string;
+  /** What the agent sized it at before the cap, and what the cap left. */
+  sizedAmount: number;
+  cappedAmount: number;
+  /** The agent's own sentence for the cut, from the record. */
+  agentReason: string;
+  preview: Preview;
+  /** Every limit the larger size would break. The cap itself is not a limit. */
+  breaches: string[];
+  exception: GrantedException | null;
+  escalation: Escalation | null;
+}
+
+function capOverrideFor(rt: Runtime, f: FundFigures, d: Proposal, events: RawEvent[], inFlight: number): CapOverride | null {
+  if (d.sizedAmount <= d.amount) return null;
+  const cut = events.find((e) => e.type === 'cut_down' && e.decisionId === d.id);
+  if (!cut) return null;
+  const preview = proposalPreview(f, d, d.sizedAmount, 'cap', 'Take the size before the cap', true, inFlight);
+  const breaches = limitBreaches(f, preview, d.company).map((b) => b.line);
+  return {
+    ...withSecondBreach(authorityFor('size-cap', preview.positionPct), breaches),
+    breaches,
+    decisionId: d.id,
+    sizedAmount: d.sizedAmount,
+    cappedAmount: d.amount,
+    agentReason: cut.text,
+    preview,
+    exception: liveException(rt, d.id),
+    escalation: openEscalation(rt, d.id),
+  };
+}
+
+// --- A decision that expired ----------------------------------------------
+
+export interface ReopenOption extends Authority {
+  decisionId: string;
+  extensionMin: number;
+  /** "Reopens it until 10:32" */
+  line: string;
+  /** How many times it has been reopened already, so a second time says so. */
+  timesReopened: number;
+}
+
+function reopenFor(rt: Runtime, id: string, events: RawEvent[]): ReopenOption {
+  const until = rt.nowMs + REOPEN_EXTENSION_MIN * 60 * 1000;
+  return {
+    ...authorityFor('expired-decision'),
+    decisionId: id,
+    extensionMin: REOPEN_EXTENSION_MIN,
+    line: `Reopens it for ${REOPEN_EXTENSION_MIN} minutes, until ${fmtTime(until)}. Nothing was bought while it was closed.`,
+    timesReopened: events.filter((e) => e.type === 'decision_reopened' && e.decisionId === id).length,
+  };
+}
+
+// --- Ideas Research dropped -----------------------------------------------
+
+export interface DroppedIdea extends Authority {
+  /** Display id and authoring key of the drop. */
+  id: string;
+  key: string;
+  company: string;
+  /** The agent's own sentence. */
+  reason: string;
+  atMs: number;
+  reinstated: { atMs: number; reason: string } | null;
+}
+
+export function deriveDropped(rt: Runtime, events: RawEvent[]): DroppedIdea[] {
+  return todayEvents(events)
+    .filter((e) => e.type === 'idea_dropped' && e.actor === 'research')
+    .map((e) => {
+      const key = e.key ?? e.id;
+      return {
+        ...authorityFor('dropped-idea'),
+        id: e.id,
+        key,
+        company: e.company ?? '',
+        reason: e.text.replace(/^Dropped [^:]+: /, ''),
+        atMs: ms(e.at),
+        reinstated: rt.reinstated[key] ?? null,
+      };
+    })
+    .reverse();
+}
+
+// --- Escalations ----------------------------------------------------------
+
+export interface EscalationFigure extends Escalation {
+  toName: string;
+  toRole: string;
+  /** "sent 10:07 · 4 min ago · chased once" */
+  waitingLine: string;
+  /** Where the request was made, so the row can reopen it. */
+  selection: ActOn['selection'];
+}
+
+export function deriveEscalations(rt: Runtime, targets: Record<string, ActOn['selection']>): EscalationFigure[] {
+  return rt.escalations
+    .filter((x) => !x.withdrawnAtMs)
+    .map((x) => {
+      const chased = x.chasedAtMs.length;
+      return {
+        ...x,
+        toName: PEOPLE[x.to].name,
+        toRole: PEOPLE[x.to].role,
+        waitingLine: [
+          `sent ${fmtTime(x.sentAtMs)}`,
+          `${fmtAge(x.sentAtMs, rt.nowMs)} without an answer`,
+          chased === 0 ? '' : chased === 1 ? 'chased once' : `chased ${fmtInt(chased)} times`,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        selection: targets[x.subjectKey] ?? null,
+      };
+    });
+}
+
+// --- What a person settled by acting -------------------------------------
+//
+// A trim ends a breach, and the breach leaves the open list with it. It goes to
+// Closed today saying what was done, so a problem that disappears from the
+// screen is never one that disappeared without a trace.
+
+export interface SettledByYou {
+  id: string;
+  label: string;
+  title: string;
+  atMs: number;
+  selection: ActOn['selection'];
+}
+
+export function deriveSettledByYou(events: RawEvent[]): SettledByYou[] {
+  return todayEvents(events)
+    .filter((e) => e.type === 'trim_instructed' && actorKind(e.actor) === 'person')
+    .map((e) => ({
+      id: e.id,
+      label: 'Trimmed on your instruction',
+      title: e.text.replace(/^Instructed a trim · /, '').replace(/ · "[^"]*"$/, ''),
+      atMs: ms(e.at),
+      selection: { kind: 'agent' as const, id: 'portfolio' as AgentId },
+    }));
+}
+
+// --- Where to act on a record ---------------------------------------------
+//
+// Every record a person can still do something about, mapped to the place that
+// does it. The Audit trail and the Portfolio page use this to put the control
+// one click from wherever the record is found.
+
+export interface ActOn {
+  selection: { kind: 'blocked'; id: string } | { kind: 'agent'; id: AgentId } | { kind: 'decision'; id: string } | null;
+  label: string;
+}
+
+export function deriveActOn(
+  rt: Runtime,
+  events: RawEvent[],
+  orders: OrderFigure[],
+  open: QueueItem[],
+  closed: QueueItem[],
+  overrides: OverrideOption[],
+  agents: Record<AgentId, AgentFigure>,
+  limitOverrides: LimitOverride[] = [],
+): { byEvent: Record<string, ActOn>; byKey: Record<string, ActOn['selection']>; byTicker: Record<string, ActOn[]> } {
+  const byEvent: Record<string, ActOn> = {};
+  const byKey: Record<string, ActOn['selection']> = {};
+  const byTicker: Record<string, ActOn[]> = {};
+  const all = [...open, ...closed];
+  const addTicker = (ticker: string | undefined, a: ActOn) => {
+    if (!ticker) return;
+    (byTicker[ticker] ??= []).some((x) => x.label === a.label) || byTicker[ticker].push(a);
+  };
+
+  for (const o of overrides) {
+    const a: ActOn = {
+      selection: { kind: 'blocked', id: o.key },
+      label: o.exception
+        ? 'See the override'
+        : o.escalation
+          ? `Waiting on ${PEOPLE[o.escalation.to].name}`
+          : o.verdict === 'refused'
+            ? `Send to ${o.askInsteadName ?? 'the person who may'}`
+            : `Overrule ${o.agentName}`,
+    };
+    byEvent[o.id] = a;
+    byKey[o.key] = a.selection;
+    addTicker(o.ticker, a);
+  }
+
+  for (const e of todayEvents(events)) {
+    const key = e.key ?? e.id;
+    if (byEvent[e.id]) continue;
+    if (e.type === 'idea_dropped' && e.actor === 'research') {
+      const done = Boolean(rt.reinstated[key]);
+      byEvent[e.id] = { selection: { kind: 'agent', id: 'research' }, label: done ? 'Back in research' : 'Send back to research' };
+      byKey[key] = byEvent[e.id].selection;
+    } else if ((e.type === 'order_placed' || e.type === 'fill') && e.orderId) {
+      const o = orders.find((x) => x.id === e.orderId);
+      if (o && (o.stoppable || o.stopped)) {
+        byEvent[e.id] = { selection: { kind: 'agent', id: o.placedBy }, label: o.stopped ? 'Order stopped' : 'Stop the rest' };
+        addTicker(o.ticker, byEvent[e.id]);
+      }
+    } else if ((e.type === 'cut_down' || e.type === 'expired' || e.type === 'sent_to_person') && (e.decisionId || e.related?.length)) {
+      const id = e.decisionId ?? e.related!.find((r) => all.some((i) => i.id === r));
+      const item = all.find((i) => i.id === id);
+      if (!item) continue;
+      if (e.type === 'cut_down' && item.capOverride) {
+        byEvent[e.id] = { selection: { kind: 'decision', id: item.id }, label: 'Take the size before the cap' };
+        addTicker(item.decision && 'ticker' in item.decision ? item.decision.ticker : undefined, byEvent[e.id]);
+      } else if (e.type === 'expired' && item.reopen) {
+        byEvent[e.id] = { selection: { kind: 'decision', id: item.id }, label: 'Reopen' };
+      }
+      byKey[item.id] = { kind: 'decision', id: item.id };
+    } else if (e.type === 'limit_broken') {
+      const item = all.find((i) => i.kind === 'limit');
+      if (item) byEvent[e.id] = { selection: { kind: 'decision', id: item.id }, label: 'Trim it or hold it' };
+    } else if (e.type === 'status_change' && e.actor === 'monitoring' && e.feedId) {
+      const halted = Object.values(agents).filter((a) => a.haltedByAgent);
+      if (halted.length) byEvent[e.id] = { selection: { kind: 'agent', id: halted[0].id }, label: 'Resume over the halt' };
+    } else if (e.type === 'status_change' && actorKind(e.actor) === 'person' && /^Throttled/.test(e.text)) {
+      const throttled = Object.values(agents).find((a) => a.throttledByPerson);
+      if (throttled) byEvent[e.id] = { selection: { kind: 'agent', id: throttled.id }, label: 'Restore full speed' };
+    }
+  }
+
+  // Broken limits, by their own key, so an escalation about one finds its way back.
+  for (const l of limitOverrides) {
+    byKey[l.key] = { kind: 'decision', id: l.itemId };
+    if (l.trims[0]) addTicker(l.trims[0].ticker, { selection: { kind: 'decision', id: l.itemId }, label: l.exception ? 'On exception' : 'Trim it or hold it' });
+  }
+  for (const item of open.filter((i) => i.kind === 'limit')) byKey[item.id] = { kind: 'decision', id: item.id };
+  for (const item of closed.filter((i) => i.kind === 'limit')) byKey[item.id] = { kind: 'decision', id: item.id };
+  for (const item of all) {
+    if (item.kind === 'proposal' && item.capOverride && item.status === 'open' && item.decision && 'ticker' in item.decision) {
+      addTicker(item.decision.ticker, { selection: { kind: 'decision', id: item.id }, label: 'Take the size before the cap' });
+    }
+    if (item.reopen && item.decision && 'ticker' in item.decision) {
+      addTicker(item.decision.ticker, { selection: { kind: 'decision', id: item.id }, label: 'Reopen the expired decision' });
+    }
+  }
+  return { byEvent, byKey, byTicker };
+}
+
+// ---------------------------------------------------------------------------
+// Orders a person can still stop
+
+export interface StoppableOrder {
+  id: string;
+  company: string;
+  side: 'buy' | 'sell';
+  /** "14 of 18 pieces placed · ₹2.1 cr bought" */
+  placedLine: string;
+  /** "4 pieces left, ₹61 lakh" — what a stop would actually prevent. */
+  remainingLine: string;
+  /** What stopping releases, which for a buy is cash. */
+  freesLine: string | null;
+  stopAfterPiece: number;
+  stopped: boolean;
+  stoppedPieces: number;
+}
+
+export function deriveStoppable(orders: OrderFigure[]): StoppableOrder[] {
+  return orders
+    .filter((o) => o.stoppable || o.stopped)
+    .map((o) => ({
+      id: o.id,
+      company: o.company,
+      side: o.side,
+      placedLine: `${fmtInt(o.placedPieces)} of ${fmtInt(o.pieces)} ${plural(o.pieces, 'piece')} placed · ${fmtCr(o.filledRupees)} ${o.side === 'buy' ? 'bought' : 'sold'}`,
+      remainingLine: o.stopped
+        ? `${fmtInt(o.unplacedPieces)} ${plural(o.unplacedPieces, 'piece')} stopped · ${fmtCr(o.remainingShares * priceOf(o.ticker, 'normal'))} never placed`
+        : `${fmtInt(o.unplacedPieces)} ${plural(o.unplacedPieces, 'piece')} left · ${fmtCr(o.inFlightRupees)}`,
+      freesLine: o.stopped || o.side !== 'buy' ? null : `Stopping it releases ${fmtCr(o.inFlightRupees)} of committed cash`,
+      stopAfterPiece: o.placedPieces,
+      stopped: o.stopped,
+      stoppedPieces: o.stopped ? o.unplacedPieces : 0,
+    }));
+}
+
+export const ORDER_STOP_NOTE = ORDER_STOP_RULE;
 
 // ---------------------------------------------------------------------------
 // Needs you
@@ -1315,7 +2121,10 @@ export interface NeedsYou {
 export function deriveNeedsYou(open: QueueItem[], limits: LimitsSummary, feeds: FeedFigure[]): NeedsYou {
   const decisions = open.filter((i) => i.kind === 'proposal' || i.kind === 'verdict').length;
   const mismatches = open.filter((i) => i.kind === 'break').length;
-  const brokenLimits = limits.broken.length;
+  // A broken limit held on exception has left the open list: it no longer needs
+  // you until the close, when the exception lapses and it comes back.
+  const brokenLimits = open.filter((i) => i.kind === 'limit').length;
+  void limits;
   const lateFeeds = feeds.filter((f) => f.late).length;
   const count = decisions + mismatches + brokenLimits + lateFeeds;
   const expiring = open.filter((i) => i.deadlineKind === 'expires' && i.deadlineMs !== null);
@@ -1348,6 +2157,8 @@ export interface Pipeline {
   complianceBlocked: number;
   autoCleared: number;
   humanApproved: number;
+  /** Orders placed on a person's override, the third way an order gets placed. */
+  onOverride: number;
   ordersPlaced: number;
 }
 
@@ -1365,6 +2176,7 @@ export function derivePipeline(c: AgentCounts): Pipeline {
     complianceBlocked: c.complianceBlocked,
     autoCleared,
     humanApproved: c.humanApproved,
+    onOverride: c.ordersOnOverride,
     ordersPlaced: c.ordersPlaced,
   };
 }
@@ -1411,6 +2223,20 @@ export interface ViewModel {
   open: QueueItem[];
   closed: QueueItem[];
   blocked: BlockedItem[];
+  /** What a person may do about each blocked item, and what it would cost. */
+  overrides: OverrideOption[];
+  /** What can be done about each broken limit: trim it, or hold it on exception. */
+  limitOverrides: LimitOverride[];
+  /** Overrides in force now, with the time each one lapses. */
+  exceptions: GrantedException[];
+  /** Requests sent to someone with the authority this console lacks, until answered. */
+  escalations: EscalationFigure[];
+  /** Problems a person ended by acting on them, for Closed today. */
+  settledByYou: SettledByYou[];
+  /** For a record in the log, where to act on it. Keyed by display id. */
+  actOn: Record<string, ActOn>;
+  /** For a holding, everything that can still be done about it. */
+  actOnTicker: Record<string, ActOn[]>;
   needsYou: NeedsYou;
   pipeline: Pipeline;
   events: RawEvent[];
@@ -1432,16 +2258,19 @@ export function derive(rt: Runtime): ViewModel {
   const rawEvents = eventsFor(rt, orders);
   const counts = deriveCounts(rawEvents);
   const limitsRaw = deriveLimits(fund, rt.state);
-  const ctx: TokenContext = { state: rt.state, nowMs: rt.nowMs, fund, limits: limitsRaw, feeds, orders, counts };
+  const ctx: TokenContext = { state: rt.state, nowMs: rt.nowMs, fund, limits: limitsRaw, feeds, orders, counts, boughtSinceByTicker: rt.shareDelta };
   const tokens = buildTokens(ctx);
   const limits = deriveLimits(fund, rt.state, tokens);
   const events = rawEvents.map((e) => ({ ...e, text: fillTemplate(e.text, { ...tokens, ...eventTokens(e, ctx) }) }));
   const decisions = resolveDecisions(rt.state, ctx, tokens);
   const health = deriveDataHealth(feeds, rt.nowMs);
-  const agents = deriveAgents(rt, events, feeds, counts, tokens);
+  const agents = deriveAgents(rt, events, feeds, counts, tokens, orders);
   const lastAction = deriveLastAgentAction(events, rt.nowMs);
-  const { open, closed } = deriveQueue(rt, fund, feeds, limits, decisions, inFlightCash(orders));
+  const { open, closed } = deriveQueue(rt, fund, feeds, limits, decisions, inFlightCash(orders), events);
   const needsYou = deriveNeedsYou(open, limits, feeds);
+  const overrides = deriveOverrides(rt, fund, events, inFlightCash(orders));
+  const limitOverrides = deriveLimitOverrides(rt, fund, limits);
+  const actOn = deriveActOn(rt, events, orders, open, closed, overrides, agents, limitOverrides);
   return {
     state: rt.state,
     nowMs: rt.nowMs,
@@ -1457,7 +2286,14 @@ export function derive(rt: Runtime): ViewModel {
     lastAction,
     open,
     closed,
-    blocked: deriveBlocked(events),
+    blocked: deriveBlocked(events, rt.exceptions),
+    overrides,
+    limitOverrides,
+    exceptions: rt.exceptions.filter((x) => !x.withdrawnAtMs),
+    escalations: deriveEscalations(rt, actOn.byKey),
+    settledByYou: deriveSettledByYou(events),
+    actOn: actOn.byEvent,
+    actOnTicker: actOn.byTicker,
     needsYou,
     pipeline: derivePipeline(counts),
     events,

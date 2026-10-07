@@ -5,6 +5,7 @@ import { LIMITS } from '../../data/scenario';
 import type { Choice } from '../../state/actions';
 import { useStore } from '../../state/store';
 import { Icon } from '../ui/Icon';
+import { OverrideForm } from './OverrideControls';
 
 interface Option {
   key: Choice;
@@ -26,7 +27,7 @@ export function Decide({
   slider?: { min: number; max: number; step: number; initial: number };
   previewFor?: (amount: number) => Preview;
 }) {
-  const { decide } = useStore();
+  const { decide, reopen } = useStore();
   const [choice, setChoice] = useState<Choice | null>(null);
   const [amount, setAmount] = useState(slider?.initial ?? 0);
   const [reason, setReason] = useState('');
@@ -52,6 +53,24 @@ export function Decide({
           {o?.at ? ` · ${fmtTime(o.at)}` : ''}
           {o?.reason ? ` · "${o.reason}"` : ''}
         </div>
+        {/* An expiry is the clock deciding, not a person. The person it was
+            waiting on can take it back, with a reason, for a fixed extension. */}
+        {item.reopen && (
+          <>
+            <div className="override-copy" style={{ marginTop: 10 }}>
+              {item.reopen.line}
+              {item.reopen.timesReopened > 0 ? ` Reopened ${item.reopen.timesReopened === 1 ? 'once' : `${item.reopen.timesReopened} times`} already.` : ''}
+            </div>
+            <OverrideForm
+              authority={item.reopen}
+              subjectKey={item.id}
+              title="Reopen it"
+              confirmLabel={`Reopen ${item.id}`}
+              confirmIcon="clock"
+              onConfirm={(reason) => reopen(item.id, reason)}
+            />
+          </>
+        )}
       </div>
     );
   }

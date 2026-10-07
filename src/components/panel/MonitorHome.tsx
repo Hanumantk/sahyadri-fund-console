@@ -65,7 +65,8 @@ export function MonitorHome() {
             <span className="l">
               {vm.pipeline.found} ideas found − {vm.pipeline.dropped} dropped = {vm.pipeline.sized} sized · {vm.pipeline.sized} sized + {vm.pipeline.trims} trims = {vm.pipeline.checked} checked by Risk ·{' '}
               {vm.pipeline.checked} checked = {vm.pipeline.cleared} cleared + {vm.pipeline.sent} sent to you + {vm.pipeline.riskBlocked} blocked · Compliance blocked {vm.pipeline.complianceBlocked} ·{' '}
-              {vm.pipeline.ordersPlaced} orders placed = {vm.pipeline.autoCleared} auto-cleared + {vm.pipeline.humanApproved} approved by you ·{' '}
+              {vm.pipeline.ordersPlaced} orders placed = {vm.pipeline.autoCleared} auto-cleared + {vm.pipeline.humanApproved} approved by you
+              {vm.pipeline.onOverride > 0 ? ` + ${vm.pipeline.onOverride} on your override` : ''} ·{' '}
               <RecordLink id="EVT-0001">see the record</RecordLink>
             </span>
           </div>

@@ -6,6 +6,7 @@ import { AttentionView } from './AttentionView';
 import { BreakView } from './BreakView';
 import { Chat } from './Chat';
 import { MonitorHome } from './MonitorHome';
+import { OverrideView } from './OverrideView';
 import { ProposalView } from './ProposalView';
 import { VerdictView } from './VerdictView';
 
@@ -23,6 +24,15 @@ export function MonitorPanel() {
 
   if (!selection) {
     body = <MonitorHome />;
+  } else if (selection.kind === 'blocked') {
+    const option = vm.overrides.find((o) => o.key === selection.id);
+    if (!option) {
+      body = <MonitorHome />;
+    } else {
+      title = `${option.company} · blocked by ${option.agentName}`;
+      badge = null;
+      body = <OverrideView option={option} />;
+    }
   } else if (selection.kind === 'agent') {
     const a = vm.agents[selection.id];
     title = a.name;

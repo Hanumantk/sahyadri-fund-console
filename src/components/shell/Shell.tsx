@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { fmtAgo, fmtTime, fmtTimeSec, fmtWeekdayDate } from '../../data/format';
 import { FUND, STATES, type StateName } from '../../data/scenario';
 import { useStore } from '../../state/store';
@@ -174,8 +174,19 @@ function NavItem({
   label: string;
   children?: ReactNode;
 }) {
+  // The scenario lives in the URL. A link that dropped it would move you to a
+  // different morning and throw away everything done in this one — every
+  // decision, stop and override — so the state and dev flags travel with you.
+  const location = useLocation();
+  const here = new URLSearchParams(location.search);
+  const keep = new URLSearchParams();
+  for (const k of ['state', 'dev']) {
+    const v = here.get(k);
+    if (v !== null) keep.set(k, v);
+  }
+  const search = keep.toString();
   return (
-    <NavLink to={to} end={end} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} title={label}>
+    <NavLink to={{ pathname: to, search: search ? `?${search}` : '' }} end={end} className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`} title={label}>
       <Icon name={icon} />
       <span className="nav-label">{label}</span>
       {children}
